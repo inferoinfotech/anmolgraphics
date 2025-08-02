@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://anmolgraphics.in
+
+# Sitemaps
+Sitemap: https://anmolgraphics.in/sitemap.xml

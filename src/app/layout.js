@@ -3,7 +3,6 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { Scroll } from "lucide-react";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 const geistSans = Geist({
@@ -28,12 +27,18 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en">
+      <head>
+        <link rel="sitemap" type="application/xml" href="https://anmolgraphics.in/sitemap.xml" />
+      </head>
       <body
         className="bg-white text-gray-900">
         <Navbar />
         <main className="pt-20">{children}</main>
         <Footer />
         <WhatsAppButton />
+        <head>
+          <link rel="sitemap" type="application/xml" href="https://anmolgraphics.in/sitemap.xml" />
+        </head>
         <ScrollToTopButton />
       </body>
     </html >
