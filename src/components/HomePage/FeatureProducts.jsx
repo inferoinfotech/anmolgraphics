@@ -71,7 +71,7 @@ const FeatureProducts = () => {
                     <div className="my-5 text-2xl font-bold leading-tight text-gray-900 sm:leading-tight sm:text-5xl lg:text-6xl lg:leading-tight font-pj">
                         Feature Products
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                         {content.map((product, index) => (
                             <Card
                                 key={index}
