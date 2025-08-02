@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+'use client'
 import React from "react";
 import { PlaceholdersAndVanishInput } from "../ui/placeholders-and-vanish-input";
 import Link from "next/link";
