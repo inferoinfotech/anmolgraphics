@@ -45,6 +45,18 @@ export default function RootLayout({ children }) {
             }),
           }}
         />
+        {/* Google Analytics GA4 */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y8BWR6NX27"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-Y8BWR6NX27');
+            `,
+          }}
+        />
       </head>
       <body
         className="bg-white text-gray-900">
