@@ -4,7 +4,7 @@ import HeroSection from "@/components/HomePage/HeroSection";
 import IndustrySolutions from "@/components/HomePage/IndustrySolutions";
 import Testimonial from "@/components/HomePage/Testimonial";
 import WhyChooseUs from "@/components/HomePage/WhyChooseUs";
-import Head from "next/head";
+import StructuredDataScript from "@/components/SEO/StructuredDataScript";
 
 export const metadata = {
   title: "Anmol Graphics | ID Cards, RFID & Printing Solutions",
@@ -14,28 +14,23 @@ export const metadata = {
   },
 }
 
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Anmol Graphics",
+  "url": "https://anmolgraphics.in/",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://anmolgraphics.in/search?q={search_term_string}",
+    "query-input": "required name=search_term_string",
+  },
+};
+
 
 export default function Home() {
   return (
     <>
-      <Head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              "name": "Anmol Graphics",
-              "url": "https://anmolgraphics.in/",
-              "potentialAction": {
-                "@type": "SearchAction",
-                "target": "https://anmolgraphics.in/search?q={search_term_string}",
-                "query-input": "required name=search_term_string",
-              },
-            }),
-          }}
-        />
-      </Head>
+      <StructuredDataScript data={schema} />
       <section className="">
         <HeroSection />
         <WhyChooseUs />
