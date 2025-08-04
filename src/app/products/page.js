@@ -8,7 +8,20 @@ export const metadata = {
 }
 
 import ProductPageWrapper from '@/components/ProductsPage/ProductPageWrapper' // client wrapper
+import StructuredDataScript from '@/components/SEO/StructuredDataScript'
+
+
 
 export default function Products() {
-    return <ProductPageWrapper />
+    const schema = {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: "Products",
+        url: "https://anmolgraphics.in/products",
+        description: metadata.description,
+    }
+    return <>
+        <StructuredDataScript data={schema} />
+        <ProductPageWrapper />
+    </>
 }

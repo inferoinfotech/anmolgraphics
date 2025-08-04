@@ -29,6 +29,22 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="sitemap" type="application/xml" href="https://anmolgraphics.in/sitemap.xml" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "Anmol Graphics",
+              "url": "https://anmolgraphics.in/",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://anmolgraphics.in/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            }),
+          }}
+        />
       </head>
       <body
         className="bg-white text-gray-900">
@@ -36,9 +52,6 @@ export default function RootLayout({ children }) {
         <main className="pt-20">{children}</main>
         <Footer />
         <WhatsAppButton />
-        <head>
-          <link rel="sitemap" type="application/xml" href="https://anmolgraphics.in/sitemap.xml" />
-        </head>
         <ScrollToTopButton />
       </body>
     </html >

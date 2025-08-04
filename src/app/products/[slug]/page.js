@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import ProductDetailPage from "@/components/ProductsPage/ProductDetails"
+import StructuredData from "@/components/SEO/StructuredData"
 
 export async function generateMetadata({ params }) {
     const product = products.find((p) => p.slug === params.slug)
@@ -38,6 +39,7 @@ export default async function ProductDetail({ params }) {
 
     return (
         <>
+            <StructuredData product={product} />
             <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6">
                 {/* Back to Products Button */}
                 <Link href="/products" className="flex items-center group text-gray-700 hover:text-gray-900 mb-4 text-sm md:text-lg">

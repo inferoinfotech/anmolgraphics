@@ -2,6 +2,7 @@ import ContactBreadcrumbs from '@/components/ContactPage/ContactBreadcrumbs'
 import ContactForm from '@/components/ContactPage/ContactForm'
 import ContactUs from '@/components/ContactPage/ContactUs'
 import WhyChooseUs from '@/components/HomePage/WhyChooseUs'
+import StructuredDataScript from '@/components/SEO/StructuredDataScript'
 import React from 'react'
 
 export const metadata = {
@@ -13,10 +14,19 @@ export const metadata = {
     },
 }
 
+const schema = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "telephone": "+91-9724259889",
+    name: "Contact Us",
+    url: "https://anmolgraphics.in/contact",
+    description: metadata.description,
+}
 
 const Contact = () => {
     return (
         <>
+            <StructuredDataScript data={schema} />
             <div className="border-b">
                 <ContactBreadcrumbs />
             </div>
