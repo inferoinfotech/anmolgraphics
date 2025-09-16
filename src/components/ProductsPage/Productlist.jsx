@@ -9,15 +9,22 @@ import products from "./ProductData"
 
 const categories = [
     { name: "All", products: products },
-    { name: "Identity Cards", products: products.filter((product) => product.category === "Identity Cards") },
-    {
-        name: "Multicolored Lanyards",
-        products: products.filter((product) => product.category === "Multicolored Lanyards"),
-    },
-    { name: "Printed Mugs", products: products.filter((product) => product.category === "Printed Mugs") },
+    { name: "Attachments", products: products.filter((product) => product.category === "Attachments") },
+    { name: "Badges", products: products.filter((product) => product.category === "Badges") },
+    { name: "Corporate ID Cards", products: products.filter((product) => product.category === "Corporate ID Cards") },
+    { name: "Exhibitors ID Cards", products: products.filter((product) => product.category === "Exhibitors ID Cards") },
+    { name: "Gift Article", products: products.filter((product) => product.category === "Gift Article") },
+    { name: "Holders", products: products.filter((product) => product.category === "Holders") },
+    { name: "ID Cards", products: products.filter((product) => product.category === "ID Cards") },
+    { name: "Keychain", products: products.filter((product) => product.category === "Keychain") },
+    { name: "Lanyards", products: products.filter((product) => product.category === "Lanyards") },
     { name: "Medals", products: products.filter((product) => product.category === "Medals") },
-    { name: "Trophies", products: products.filter((product) => product.category === "Trophies") },
-]
+    { name: "Membership Cards", products: products.filter((product) => product.category === "Membership Cards") },
+    { name: "Mouse Pad", products: products.filter((product) => product.category === "Mouse Pad") },
+    { name: "Mug", products: products.filter((product) => product.category === "Mug") },
+    { name: "RFID Smart Cards", products: products.filter((product) => product.category === "RFID Smart Cards") },
+    { name: "YoYo", products: products.filter((product) => product.category === "YoYo") },
+];
 
 const Productlist = ({ searchTerm = "" }) => {
     const [selectedCategory, setSelectedCategory] = useState(categories[0]) // Default to "All" category
