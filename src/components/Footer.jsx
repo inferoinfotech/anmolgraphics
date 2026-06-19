@@ -3,6 +3,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Clock, PhoneCall } from "lucide-react";
+import { usePathname } from "next/navigation";
 import {
     IconBrandInstagram,
     IconBrandWhatsapp,
@@ -12,6 +13,10 @@ import {
 import { FloatingDock } from "./ui/floating-dock";
 
 const Footer = () => {
+    const pathname = usePathname();
+    if (pathname && pathname.startsWith("/admin")) {
+        return null;
+    }
     const links = [
         { title: "Home", icon: <IconHome className="h-full w-full text-neutral-500" />, href: "/" },
         { title: "Products", icon: <IconTerminal2 className="h-full w-full text-neutral-500" />, href: "products" },

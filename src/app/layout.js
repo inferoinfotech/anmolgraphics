@@ -5,6 +5,8 @@ import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
 
+import MainWrapper from "@/components/MainWrapper";
+
 const geistSans = Geist({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800", "900"], // Ensuring all weights are included
@@ -61,11 +63,11 @@ export default function RootLayout({ children }) {
       <body
         className="bg-white text-gray-900">
         <Navbar />
-        <main className="pt-20">{children}</main>
+        <MainWrapper>{children}</MainWrapper>
         <Footer />
         <WhatsAppButton />
         <ScrollToTopButton />
       </body>
-    </html >
+    </html>
   );
 }

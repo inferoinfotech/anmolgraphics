@@ -1,7 +1,7 @@
 // app/api/contact/route.ts
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY || "");
+const resend = new Resend(process.env.RESEND_API_KEY || "re_dummykey_for_build");
 const recipientEmail = process.env.RESEND_RECIPIENT_EMAIL || "";
 const senderEmail = process.env.RESEND_SENDER_EMAIL || "";
 

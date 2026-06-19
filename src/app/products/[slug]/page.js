@@ -1,4 +1,6 @@
-import products from "@/components/ProductsPage/ProductData"
+import dbConnect from "@/lib/dbConnect"
+import Product from "@/lib/models/Product"
+import { seedDatabase } from "@/lib/seed"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -6,7 +8,9 @@ import ProductDetailPage from "@/components/ProductsPage/ProductDetails"
 import StructuredData from "@/components/SEO/StructuredData"
 
 export async function generateMetadata({ params }) {
-    const product = products.find((p) => p.slug === params.slug)
+    const { slug } = await params
+    await dbConnect()
+    const product = await Product.findOne({ slug }).lean()
     if (!product) return {}
 
     return {
@@ -20,22 +24,36 @@ export async function generateMetadata({ params }) {
 
 // Function to generate static params
 export async function generateStaticParams() {
-    return products.map((product) => ({
-        slug: product.slug,
-    }));
+    try {
+        await dbConnect()
+        await seedDatabase()
+        const dbProducts = await Product.find({}, { slug: 1 }).lean()
+        return dbProducts.map((product) => ({
+            slug: product.slug,
+        }));
+    } catch (e) {
+        console.error("Static params generation failed:", e)
+        return []
+    }
 }
 
 export default async function ProductDetail({ params }) {
-    const { slug } = params // Get product slug
-    const product = products.find((p) => p.slug === params.slug);
-    if (!product) {
+    const { slug } = await params
+    await dbConnect()
+    
+    // Fetch product and serialize Mongoose document
+    const dbProduct = await Product.findOne({ slug }).lean()
+    if (!dbProduct) {
         return notFound()
     }
+    const product = JSON.parse(JSON.stringify(dbProduct))
 
-    // Get related products
-    const relatedProducts = products
-        .filter((item) => item.slug !== slug && item.hashtags.some((tag) => product.hashtags.includes(tag)))
-        .slice(0, 4);
+    // Get related products based on shared hashtags
+    const dbRelated = await Product.find({
+        slug: { $ne: slug },
+        hashtags: { $in: product.hashtags || [] }
+    }).limit(4).lean()
+    const relatedProducts = JSON.parse(JSON.stringify(dbRelated))
 
     return (
         <>
@@ -68,11 +86,11 @@ export default async function ProductDetail({ params }) {
                         <div className="mt-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                             {relatedProducts.map((relatedProduct) => (
                                 <div
-                                    key={relatedProduct.id}
+                                    key={relatedProduct.id || relatedProduct._id}
                                     className="border border-slate-200 hover:border-slate-700 transition-all duration-300 rounded-xl sm:rounded-2xl p-3 sm:p-4 group relative flex flex-col h-full"
                                 >
                                     <Image
-                                        src={relatedProduct.images[0] || "/placeholder.svg"}
+                                        src={relatedProduct.thumbnail || relatedProduct.images[0] || "/placeholder.svg"}
                                         alt={relatedProduct.title}
                                         width={300}
                                         height={200}

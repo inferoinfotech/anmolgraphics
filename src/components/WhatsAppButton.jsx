@@ -1,9 +1,15 @@
 "use client";
 import { useState } from "react";
 import { FaWhatsapp } from "react-icons/fa";
+import { usePathname } from "next/navigation";
 
 export default function WhatsAppButton() {
+  const pathname = usePathname();
   const [showPopup, setShowPopup] = useState(false);
+
+  if (pathname && pathname.startsWith("/admin")) {
+    return null;
+  }
 
   const phoneNumber = "919724259889"; // Replace with your WhatsApp number
 

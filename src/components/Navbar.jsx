@@ -4,9 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { LayoutGrid, Mail, Phone, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 const Navbar = () => {
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+
+    if (pathname && pathname.startsWith("/admin")) {
+        return null;
+    }
 
     const handleClick = () => {
         setIsOpen(!isOpen);

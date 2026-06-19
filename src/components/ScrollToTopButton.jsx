@@ -1,9 +1,14 @@
 "use client";
-
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function ScrollToTopButton() {
+  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
+
+  if (pathname && pathname.startsWith("/admin")) {
+    return null;
+  }
 
   useEffect(() => {
     const toggleVisibility = () => {

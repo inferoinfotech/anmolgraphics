@@ -1,42 +1,78 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { ChevronDown, ChevronRight } from "lucide-react"
 
-// Assuming products is imported from another file
-import products from "./ProductData"
-
-const categories = [
-    { name: "All", products: products },
-    { name: "Attachments", products: products.filter((product) => product.category === "Attachments") },
-    { name: "Badges", products: products.filter((product) => product.category === "Badges") },
-    { name: "Corporate ID Cards", products: products.filter((product) => product.category === "Corporate ID Cards") },
-    { name: "Exhibitors ID Cards", products: products.filter((product) => product.category === "Exhibitors ID Cards") },
-    { name: "Gift Article", products: products.filter((product) => product.category === "Gift Article") },
-    { name: "Holders", products: products.filter((product) => product.category === "Holders") },
-    { name: "ID Cards", products: products.filter((product) => product.category === "ID Cards") },
-    { name: "Keychain", products: products.filter((product) => product.category === "Keychain") },
-    { name: "Lanyards", products: products.filter((product) => product.category === "Lanyards") },
-    { name: "Medals", products: products.filter((product) => product.category === "Medals") },
-    { name: "Membership Cards", products: products.filter((product) => product.category === "Membership Cards") },
-    { name: "Mouse Pad", products: products.filter((product) => product.category === "Mouse Pad") },
-    { name: "Mug", products: products.filter((product) => product.category === "Mug") },
-    { name: "RFID Smart Cards", products: products.filter((product) => product.category === "RFID Smart Cards") },
-    { name: "YoYo", products: products.filter((product) => product.category === "YoYo") },
-];
-
 const Productlist = ({ searchTerm = "" }) => {
-    const [selectedCategory, setSelectedCategory] = useState(categories[0]) // Default to "All" category
+    const [categories, setCategories] = useState([{ name: "All", products: [] }])
+    const [selectedCategoryName, setSelectedCategoryName] = useState("All")
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const loadProducts = async () => {
+            try {
+                const res = await fetch('/api/products')
+                const data = await res.json()
+                
+                const dbProducts = data.products || []
+                const dbCategories = data.categories || []
+
+                const constructed = [
+                    { name: "All", products: dbProducts },
+                    ...dbCategories.map(cat => ({
+                        name: cat.name,
+                        products: dbProducts.filter(p => p.category === cat.name)
+                    }))
+                ]
+                setCategories(constructed)
+            } catch (error) {
+                console.error("Failed to load products:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadProducts()
+    }, [])
+
+    const selectedCategory = categories.find(c => c.name === selectedCategoryName) || categories[0] || { name: "All", products: [] }
 
     // Filter products based on search term
     const filteredProducts = selectedCategory.products.filter(
         (product) =>
             (product.title && product.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (product.hashtags && product.hashtags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))),
     )
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <svg 
+                    className="animate-spin h-8 w-8 text-slate-800" 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24"
+                >
+                    <circle 
+                        className="opacity-25" 
+                        cx="12" 
+                        cy="12" 
+                        r="10" 
+                        stroke="currentColor" 
+                        strokeWidth="4"
+                    />
+                    <path 
+                        className="opacity-75" 
+                        fill="currentColor" 
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                </svg>
+                <span className="text-sm font-medium text-slate-500">Loading products...</span>
+            </div>
+        )
+    }
 
     return (
         <main className="mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
@@ -60,7 +96,7 @@ const Productlist = ({ searchTerm = "" }) => {
                                     className={`py-2 px-3 rounded-lg transition-all duration-200 cursor-pointer 
                                     ${selectedCategory.name === category.name ? "bg-slate-300" : "hover:bg-slate-200"}`}
                                     onClick={() => {
-                                        setSelectedCategory(category)
+                                        setSelectedCategoryName(category.name)
                                         setIsMobileFilterOpen(false)
                                     }}
                                 >
@@ -82,7 +118,7 @@ const Productlist = ({ searchTerm = "" }) => {
                                 key={category.name}
                                 className={`py-2 px-2 rounded-lg transition-all duration-300 cursor-pointer 
                                 ${selectedCategory.name === category.name ? "bg-slate-300" : "hover:bg-slate-200 hover:translate-x-1"}`}
-                                onClick={() => setSelectedCategory(category)}
+                                onClick={() => setSelectedCategoryName(category.name)}
                             >
                                 {category.name}
                             </li>
@@ -101,7 +137,7 @@ const Productlist = ({ searchTerm = "" }) => {
                             >
                                 {/* Product Image */}
                                 <Image
-                                    src={product.images[0] || "/placeholder.svg"}
+                                    src={product.thumbnail || product.images[0] || "/placeholder.svg"}
                                     alt={product.title}
                                     width={300}
                                     height={200}
@@ -155,4 +191,5 @@ const Productlist = ({ searchTerm = "" }) => {
 }
 
 export default Productlist
+
 

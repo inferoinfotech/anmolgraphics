@@ -1,7 +1,7 @@
 // ProductDetailPage.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
 import { Button } from "../ui/Button";
 import Link from "next/link";
@@ -9,6 +9,14 @@ import Link from "next/link";
 export default function ProductDetailPage({ product }) {
 
   const [mainImage, setMainImage] = useState(product?.images?.[0] || "/placeholder.jpg");
+
+  useEffect(() => {
+    if (product?.images?.length) {
+      setMainImage(product.images[0]);
+    } else {
+      setMainImage("/placeholder.jpg");
+    }
+  }, [product]);
 
   if (!product) return <div>Product not found</div>;
 
@@ -41,7 +49,11 @@ export default function ProductDetailPage({ product }) {
         <div className="w-full flex flex-col gap-4">
           {/* Ratings - optional */}
           <div className="flex items-center space-x-1">
-            <span className="text-yellow-500 text-lg">★★★★☆</span>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span key={i} className="text-yellow-500 text-lg">
+                {i < (product.rating || 5) ? '★' : '☆'}
+              </span>
+            ))}
           </div>
 
           {/* Title */}
@@ -91,8 +103,25 @@ export default function ProductDetailPage({ product }) {
 
           <div>
             <h3 className="text-md font-semibold text-gray-800 mb-2">Note</h3>
-            <p className="text-gray-600 text-sm">Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.</p>
+            <p className="text-gray-600 text-sm">{product.note || "Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply."}</p>
           </div>
+
+          {/* Dynamic Rich Text Sections */}
+          {product.sections && product.sections.length > 0 && (
+            <div className="space-y-4 mt-6">
+              {product.sections.map((section, idx) => {
+                if (!section.content) return null;
+                return (
+                  <div key={idx} className="border-t border-slate-100 pt-6">
+                    <div 
+                      className="tiptap-content text-sm text-gray-700"
+                      dangerouslySetInnerHTML={{ __html: section.content }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
         </div>
       </div>
