@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
-<url><loc>https://anmolgraphics.in/admin/login</loc><lastmod>2026-06-19T08:53:59.435Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/faq</loc><lastmod>2026-06-19T08:53:59.440Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/about</loc><lastmod>2026-06-19T08:53:59.440Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/products</loc><lastmod>2026-06-19T08:53:59.440Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in</loc><lastmod>2026-06-19T08:53:59.440Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/contact</loc><lastmod>2026-06-19T08:53:59.440Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/products/Named-badges</loc><lastmod>2026-06-19T08:53:59.441Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/products/customised-badges</loc><lastmod>2026-06-19T08:53:59.441Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/products/metal-swivel-hooks-and-snap-clips</loc><lastmod>2026-06-19T08:53:59.441Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/products/metal-swivel-hooks-and-snap-clips-set</loc><lastmod>2026-06-19T08:53:59.441Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/products/metal-swivel-hooks-and-snap-clips-set-2</loc><lastmod>2026-06-19T08:53:59.441Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/products/rounded-customised-badges</loc><lastmod>2026-06-19T08:53:59.441Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
-<url><loc>https://anmolgraphics.in/products/test-product</loc><lastmod>2026-06-19T08:53:59.441Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://anmolgraphics.in</loc><lastmod>2026-11-14T14:17:11.218Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://anmolgraphics.in/products</loc><lastmod>2026-11-14T14:17:11.220Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://anmolgraphics.in/admin/login</loc><lastmod>2026-11-14T14:17:11.220Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://anmolgraphics.in/contact</loc><lastmod>2026-11-14T14:17:11.220Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://anmolgraphics.in/about</loc><lastmod>2026-11-14T14:17:11.220Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
+<url><loc>https://anmolgraphics.in/faq</loc><lastmod>2026-11-14T14:17:11.220Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
 </urlset>

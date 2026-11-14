@@ -9,13 +9,11 @@ import MainWrapper from "@/components/MainWrapper";
 
 const geistSans = Geist({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"], // Ensuring all weights are included
   variable: "--font-geist-sans",
 });
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"], // Ensuring all weights are included
   variable: "--font-geist-mono",
 });
 
@@ -28,7 +26,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
         <link rel="sitemap" type="application/xml" href="https://anmolgraphics.in/sitemap.xml" />
         <script
