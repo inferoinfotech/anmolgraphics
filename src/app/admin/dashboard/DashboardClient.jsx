@@ -4,6 +4,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import TiptapEditor from '@/components/Admin/TiptapEditor';
 import { useAdminToaster } from '@/components/Admin/AdminToaster';
+import {
+  adminBtnPrimary,
+  adminBtnOutlineBlue,
+  adminBtnDangerSolid,
+  adminBtnIcon,
+  adminBtnIconDanger,
+  adminBtnIconMuted,
+  adminBtnSidebarNav,
+  adminBtnLogout,
+  adminBtnSmallOutlineBlue,
+  adminBtnSmallPrimary,
+  adminBtnSidebarChrome,
+  adminBtnGrip,
+  adminBtnToolbar,
+  adminBtnSectionMove,
+} from '@/components/Admin/adminButtonClasses';
 import { 
   Plus, 
   Trash2, 
@@ -22,6 +38,22 @@ import {
 } from 'lucide-react';
 
 const VALID_TABS = ['products', 'categories'];
+
+function ModalFieldLabel({ htmlFor, children, required = false }) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="block text-xs font-semibold text-ag-ink/55 uppercase tracking-wider mb-1.5"
+    >
+      {children}
+      {required ? (
+        <span className="text-red-600 font-bold ml-0.5" aria-hidden="true">
+          *
+        </span>
+      ) : null}
+    </label>
+  );
+}
 
 export default function DashboardClient() {
   const router = useRouter();
@@ -83,6 +115,7 @@ export default function DashboardClient() {
   
   // File Upload State
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [productFormError, setProductFormError] = useState('');
 
@@ -335,11 +368,12 @@ export default function DashboardClient() {
   };
 
   // Image Upload Handling
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
     setUploading(true);
+    setUploadProgress(0);
     setProductFormError('');
 
     const formData = new FormData();
@@ -347,32 +381,51 @@ export default function DashboardClient() {
       formData.append('files', file);
     });
 
-    try {
-      const res = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: formData,
-      });
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/admin/upload');
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const newUrls = data.urls;
-        setProductImages((prev) => [...prev, ...newUrls]);
-        // Set first uploaded image as default thumbnail if none selected
-        if (!productThumbnail) {
-          setProductThumbnail(newUrls[0]);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        setUploadProgress(Math.min(100, Math.round((event.loaded / event.total) * 100)));
+      }
+    };
+
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if (xhr.status >= 200 && xhr.status < 300 && data.success) {
+          const newUrls = data.urls || [];
+          setUploadProgress(100);
+          setProductImages((prev) => [...prev, ...newUrls]);
+          if (!productThumbnail && newUrls[0]) {
+            setProductThumbnail(newUrls[0]);
+          }
+          toast(`Uploaded ${newUrls.length} image${newUrls.length === 1 ? '' : 's'}.`, 'success', 2500);
+        } else {
+          const message = data.error || 'Failed to upload images';
+          setProductFormError(message);
+          toast(message, 'error');
         }
-      } else {
-        const message = data.error || 'Failed to upload images';
+      } catch {
+        const message = 'Invalid response from upload server';
         setProductFormError(message);
         toast(message, 'error');
       }
-    } catch (err) {
+      setUploading(false);
+      setUploadProgress(0);
+      e.target.value = '';
+    };
+
+    xhr.onerror = () => {
       const message = 'Error uploading files';
       setProductFormError(message);
       toast(message, 'error');
-    } finally {
       setUploading(false);
-    }
+      setUploadProgress(0);
+      e.target.value = '';
+    };
+
+    xhr.send(formData);
   };
 
   // Remove Image from list
@@ -391,6 +444,13 @@ export default function DashboardClient() {
 
     if (!productTitle.trim() || !productDescription.trim() || !productCategory) {
       const message = 'Title, description, and category are required.';
+      setProductFormError(message);
+      toast(message, 'error');
+      return;
+    }
+
+    if (productImages.length === 0) {
+      const message = 'Add at least one product photo before saving.';
       setProductFormError(message);
       toast(message, 'error');
       return;
@@ -491,6 +551,7 @@ export default function DashboardClient() {
 
   const handleProductDragStart = (e, productId) => {
     if (!canReorderProducts || reorderSaving) return;
+    e.stopPropagation();
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', productId);
     setDraggedProductId(productId);
@@ -557,10 +618,6 @@ export default function DashboardClient() {
   const getCategoryProductCount = (name) =>
     products.filter((p) => p.category === name).length;
 
-  const totalCategorizedProducts = products.filter((p) =>
-    categories.some((c) => c.name === p.category)
-  ).length;
-
   const showConfirm = (title, message, confirmCallback) => {
     setConfirmTitle(title);
     setConfirmMessage(message);
@@ -592,13 +649,14 @@ export default function DashboardClient() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row font-roboto">
+    <div className="min-h-screen bg-ag-canvas text-ag-ink flex flex-col lg:flex-row font-roboto">
       <Toaster />
       {/* Mobile Top Header */}
-      <header className="lg:hidden bg-slate-900 text-white flex items-center justify-between p-4 sticky top-0 z-40 shadow-md">
+      <header className="lg:hidden bg-ag-sidebar text-white flex items-center justify-between p-4 sticky top-0 z-40 shadow-md">
         <button
+          type="button"
           onClick={() => setIsMobileSidebarOpen(true)}
-          className="p-1.5 hover:bg-white/10 rounded-lg transition"
+          className={`p-1.5 ${adminBtnSidebarChrome}`}
           title="Open Menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -626,29 +684,25 @@ export default function DashboardClient() {
       {/* Sidebar Panel */}
       <aside
         className={`
-          fixed inset-y-0 left-0 w-[17.5rem] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white
-          flex flex-col z-50 transition-transform duration-300 transform border-r border-white/5 shadow-2xl lg:shadow-none
+          fixed inset-y-0 left-0 w-[17.5rem] bg-ag-sidebar text-white
+          flex flex-col z-50 transition-transform duration-300 transform border-r border-white/10 shadow-2xl lg:shadow-none
           lg:translate-x-0 lg:static lg:h-screen lg:sticky lg:top-0 lg:flex shrink-0
           ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="p-5 border-b border-white/5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+        <div className="p-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <div className="w-full min-w-0 rounded-lg bg-white p-2.5 shadow-sm">
               <img
                 src="/assets/images/erasebg-transformed.png"
                 alt="Anmol Graphics"
-                className="h-10 w-10 object-contain bg-white rounded-lg p-1 shrink-0"
+                className="w-full h-auto max-h-14 object-contain object-center"
               />
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Admin</p>
-                <p className="text-sm font-bold text-white truncate leading-tight">Anmol Graphics</p>
-              </div>
             </div>
             <button
               type="button"
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition text-slate-400 hover:text-white"
+              className={`lg:hidden p-2 shrink-0 ${adminBtnSidebarChrome}`}
               title="Close menu"
             >
               <X className="w-5 h-5" />
@@ -656,8 +710,8 @@ export default function DashboardClient() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-5">
-          <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
+        <div className="flex-1 overflow-y-auto ag-scrollbar ag-scrollbar-thin px-3 py-3">
+          <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-ag-sidebar-text/70">
             Management
           </p>
           <nav className="space-y-1">
@@ -667,13 +721,9 @@ export default function DashboardClient() {
                 switchTab('products');
                 setIsMobileSidebarOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'products'
-                  ? 'bg-white text-slate-900 shadow-lg shadow-black/25'
-                  : 'text-slate-400 hover:bg-white/10 hover:text-white'
-              }`}
+              className={adminBtnSidebarNav(activeTab === 'products')}
             >
-              <Package className={`w-5 h-5 shrink-0 ${activeTab === 'products' ? 'text-slate-900' : ''}`} />
+              <Package className={`w-5 h-5 shrink-0 ${activeTab === 'products' ? 'text-ag-active-text' : ''}`} />
               Products
             </button>
             <button
@@ -682,27 +732,19 @@ export default function DashboardClient() {
                 switchTab('categories');
                 setIsMobileSidebarOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'categories'
-                  ? 'bg-white text-slate-900 shadow-lg shadow-black/25'
-                  : 'text-slate-400 hover:bg-white/10 hover:text-white'
-              }`}
+              className={adminBtnSidebarNav(activeTab === 'categories')}
             >
-              <Grid className={`w-5 h-5 shrink-0 ${activeTab === 'categories' ? 'text-slate-900' : ''}`} />
+              <Grid className={`w-5 h-5 shrink-0 ${activeTab === 'categories' ? 'text-ag-active-text' : ''}`} />
               Categories
             </button>
           </nav>
         </div>
 
-        <div className="p-4 border-t border-white/10 space-y-2">
-          <div className="rounded-xl bg-white/5 border border-white/5 px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Session</p>
-            <p className="text-sm font-semibold text-white mt-0.5">Administrator</p>
-          </div>
+        <div className="p-3 border-t border-white/10">
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition"
+            className={adminBtnLogout}
           >
             <LogOut className="w-4 h-4" />
             Logout
@@ -711,13 +753,19 @@ export default function DashboardClient() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-auto lg:max-h-screen">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 font-roboto">
+      <main
+        className={`flex-1 flex flex-col min-h-0 p-2 sm:p-3 lg:p-5 lg:max-h-screen ${
+          activeTab === 'categories' && !loading
+            ? 'lg:overflow-hidden'
+            : 'overflow-y-auto ag-scrollbar'
+        }`}
+      >
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 font-roboto shrink-0">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-ag-ink tracking-tight">
               {activeTab === 'products' ? 'Products Directory' : 'Categories Directory'}
             </h1>
-            <p className="text-slate-500 text-sm mt-1 font-normal">
+            <p className="text-ag-ink/60 text-sm mt-1 font-normal">
               Add, update or delete your store inventory configuration.
             </p>
           </div>
@@ -726,7 +774,7 @@ export default function DashboardClient() {
             <button
               type="button"
               onClick={openAddProductModal}
-              className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-800 transition flex items-center gap-2 shadow-sm"
+              className={adminBtnPrimary}
             >
               <Plus className="w-5 h-5" />
               Add Product
@@ -737,7 +785,7 @@ export default function DashboardClient() {
             <button
               type="button"
               onClick={openAddCategoryModal}
-              className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-800 transition flex items-center gap-2 shadow-sm"
+              className={adminBtnPrimary}
             >
               <Plus className="w-5 h-5" />
               Add Category
@@ -748,7 +796,7 @@ export default function DashboardClient() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <svg 
-              className="animate-spin h-8 w-8 text-slate-900" 
+              className="animate-spin h-8 w-8 text-ag-primary" 
               xmlns="http://www.w3.org/2000/svg" 
               fill="none" 
               viewBox="0 0 24 24"
@@ -773,16 +821,16 @@ export default function DashboardClient() {
           <>
             {/* PRODUCTS TAB */}
             {activeTab === 'products' && (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {/* Search & filters */}
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+                <div className="bg-white p-2 sm:p-3 rounded-xl border border-ag-border shadow-sm flex flex-col lg:flex-row gap-2 lg:items-center lg:justify-between">
                   <div className="relative flex-1 max-w-xl">
                     <input
                       type="text"
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                       placeholder="Search products by title, category, slug..."
-                      className="w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm bg-white"
+                      className="w-full pl-10 pr-10 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary text-sm bg-white"
                     />
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                       <Search className="w-4 h-4" />
@@ -791,20 +839,20 @@ export default function DashboardClient() {
                       <button
                         type="button"
                         onClick={() => setProductSearch('')}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 ${adminBtnIconMuted}`}
                       >
                         <X className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    <label className="text-xs font-semibold text-ag-ink/55 uppercase tracking-wider whitespace-nowrap">
                       Category
                     </label>
                     <select
                       value={productCategoryFilter}
                       onChange={(e) => setProductCategoryFilter(e.target.value)}
-                      className="w-full sm:w-52 px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm bg-white text-slate-800"
+                      className="w-full sm:w-52 px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary text-sm bg-white text-ag-ink"
                     >
                       <option value="all">All categories</option>
                       {categories.map((cat) => (
@@ -825,21 +873,21 @@ export default function DashboardClient() {
                   <p className="text-xs font-semibold text-slate-600 px-1">Saving display order…</p>
                 )}
 
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
+                <div className="bg-white rounded-xl border border-ag-border shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto max-h-[65vh] overflow-y-auto ag-scrollbar">
                   <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100 shadow-sm">
+                    <thead className="sticky top-0 z-10 bg-ag-table-head border-b border-ag-ink shadow-sm">
                       <tr>
-                        <th className="px-3 py-4 w-10 text-xs font-bold text-slate-500 uppercase tracking-wider" title="Drag to reorder">
+                        <th className="px-2 py-2 w-10 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider" title="Drag to reorder">
                           #
                         </th>
-                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Product</th>
-                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Category</th>
-                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Rating</th>
-                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                        <th className="px-4 py-2 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider">Product</th>
+                        <th className="px-4 py-2 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider">Category</th>
+                        <th className="px-4 py-2 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider">Rating</th>
+                        <th className="px-4 py-2 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm">
+                    <tbody className="divide-y divide-ag-border text-sm">
                       {filteredProducts.length === 0 ? (
                         <tr>
                           <td colSpan="5" className="text-center py-10 text-slate-400">
@@ -850,74 +898,76 @@ export default function DashboardClient() {
                         filteredProducts.map((product, displayIndex) => (
                           <tr
                             key={product._id}
-                            draggable={canReorderProducts && !reorderSaving}
-                            onDragStart={(e) => handleProductDragStart(e, product._id)}
                             onDragOver={(e) => handleProductDragOver(e, product._id)}
                             onDragLeave={() => {
                               if (dragOverProductId === product._id) setDragOverProductId(null);
                             }}
                             onDrop={(e) => handleProductDrop(e, product._id)}
-                            onDragEnd={resetProductDragState}
                             className={`transition ${
-                              draggedProductId === product._id ? 'opacity-40' : 'hover:bg-slate-50/50'
-                            } ${dragOverProductId === product._id ? 'bg-slate-100 ring-1 ring-inset ring-slate-300' : ''}`}
+                              draggedProductId === product._id ? 'opacity-40' : 'hover:bg-ag-active/50'
+                            } ${dragOverProductId === product._id ? 'bg-ag-active ring-1 ring-inset ring-ag-primary/40' : ''}`}
                           >
-                            <td className="px-3 py-4 text-slate-400">
+                            <td className="px-2 py-2 text-slate-400">
                               <div className="flex items-center gap-1">
                                 {canReorderProducts ? (
-                                  <button
-                                    type="button"
-                                    className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                                  <div
+                                    role="button"
+                                    tabIndex={reorderSaving ? -1 : 0}
+                                    aria-label="Drag to reorder"
+                                    draggable={!reorderSaving}
+                                    onDragStart={(e) => handleProductDragStart(e, product._id)}
+                                    onDragEnd={resetProductDragState}
+                                    className={`${adminBtnGrip} select-none touch-none`}
                                     title="Drag to reorder"
                                     onMouseDown={(e) => e.stopPropagation()}
                                   >
-                                    <GripVertical className="w-4 h-4" />
-                                  </button>
+                                    <GripVertical className="w-4 h-4 pointer-events-none" />
+                                  </div>
                                 ) : (
                                   <span className="text-xs tabular-nums pl-1">{displayIndex + 1}</span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-4">
+                            <td className="px-4 py-2">
+                              <div className="flex items-center gap-2">
                                 <img
                                   src={product.thumbnail || '/placeholder.svg'}
                                   alt={product.title}
-                                  className="w-12 h-12 object-cover rounded-lg border border-slate-100"
+                                  className="w-12 h-12 object-cover rounded-lg border border-ag-border"
                                 />
                                 <div>
-                                  <div className="font-semibold text-slate-800">{product.title}</div>
+                                  <div className="font-semibold text-ag-ink">{product.title}</div>
                                   <div className="text-xs text-slate-400 font-mono mt-0.5">/{product.slug}</div>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-slate-600 font-medium">{product.category}</td>
-                            <td className="px-6 py-4">
+                            <td className="px-4 py-2 text-slate-600 font-medium">{product.category}</td>
+                            <td className="px-4 py-2">
                               <div className="flex items-center gap-1">
                                 {Array.from({ length: 5 }).map((_, i) => (
                                   <Star 
                                     key={i} 
                                     className={`w-4 h-4 ${
                                       i < (product.rating || 5) 
-                                        ? 'text-yellow-400 fill-yellow-400' 
+                                        ? 'text-ag-amber fill-ag-amber' 
                                         : 'text-slate-200'
                                     }`} 
                                   />
                                 ))}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-right">
+                            <td className="px-4 py-2 text-right">
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={() => openEditProductModal(product)}
-                                  className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                                  className={adminBtnIcon}
                                   title="Edit Product"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteProduct(product._id)}
-                                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
+                                  className={adminBtnIconDanger}
                                   title="Delete Product"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -936,30 +986,12 @@ export default function DashboardClient() {
 
             {/* CATEGORIES TAB */}
             {activeTab === 'categories' && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total categories</p>
-                    <p className="text-2xl font-extrabold text-slate-800 mt-1">{categories.length}</p>
-                  </div>
-                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Products linked</p>
-                    <p className="text-2xl font-extrabold text-slate-800 mt-1">{totalCategorizedProducts}</p>
-                  </div>
-                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Showing results</p>
-                    <p className="text-2xl font-extrabold text-slate-800 mt-1">
-                      {filteredCategories.length}
-                      {categorySearch ? ` / ${categories.length}` : ''}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[420px]">
-                  <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex-1 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0 bg-white rounded-xl border border-ag-border shadow-sm overflow-hidden flex flex-col">
+                  <div className="p-2 sm:p-3 border-b border-ag-ink bg-ag-table-head flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-800">All categories</h3>
-                      <p className="text-xs text-slate-500 mt-0.5">Use edit to rename — linked products update automatically.</p>
+                      <h3 className="text-sm font-bold text-white">All categories</h3>
+                      <p className="text-xs text-ag-sidebar-text/90 mt-0.5">Use edit to rename — linked products update automatically.</p>
                     </div>
                     <div className="relative w-full sm:max-w-xs">
                       <input
@@ -967,7 +999,7 @@ export default function DashboardClient() {
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
                         placeholder="Search categories..."
-                        className="w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm bg-white"
+                        className="w-full pl-10 pr-10 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary text-sm bg-white"
                       />
                       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                         <Search className="w-4 h-4" />
@@ -976,7 +1008,7 @@ export default function DashboardClient() {
                         <button
                           type="button"
                           onClick={() => setCategorySearch('')}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 ${adminBtnIconMuted}`}
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -984,17 +1016,34 @@ export default function DashboardClient() {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto flex-1 max-h-[62vh] overflow-y-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100">
-                        <tr>
-                          <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider w-12">#</th>
-                          <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Category name</th>
-                          <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Products</th>
-                          <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 text-sm">
+                  <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                    <div className="shrink-0 overflow-x-auto border-b border-ag-ink bg-ag-table-head">
+                      <table className="w-full table-fixed border-collapse text-left">
+                        <colgroup>
+                          <col style={{ width: '3rem' }} />
+                          <col />
+                          <col style={{ width: '8.5rem' }} />
+                          <col style={{ width: '6.25rem' }} />
+                        </colgroup>
+                        <thead>
+                          <tr>
+                            <th className="px-3 py-2 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider">#</th>
+                            <th className="px-3 py-2 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider">Category name</th>
+                            <th className="px-3 py-2 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider">Products</th>
+                            <th className="px-3 py-2 text-xs font-bold text-ag-sidebar-text uppercase tracking-wider text-right">Actions</th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </div>
+                    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto ag-scrollbar">
+                      <table className="w-full table-fixed border-collapse text-left">
+                        <colgroup>
+                          <col style={{ width: '3rem' }} />
+                          <col />
+                          <col style={{ width: '8.5rem' }} />
+                          <col style={{ width: '6.25rem' }} />
+                        </colgroup>
+                        <tbody className="divide-y divide-ag-border text-sm">
                         {filteredCategories.length === 0 ? (
                           <tr>
                             <td colSpan="4" className="text-center py-12 text-slate-400">
@@ -1008,26 +1057,26 @@ export default function DashboardClient() {
                           filteredCategories.map((category, index) => {
                             const productCount = getCategoryProductCount(category.name);
                             return (
-                              <tr key={category._id} className="hover:bg-slate-50/60 transition">
-                                <td className="px-5 py-4 text-slate-400 font-medium tabular-nums">{index + 1}</td>
-                                <td className="px-5 py-4 font-semibold text-slate-800">{category.name}</td>
-                                <td className="px-5 py-4">
+                              <tr key={category._id} className="hover:bg-ag-active/60 transition">
+                                <td className="px-3 py-2 text-slate-400 font-medium tabular-nums">{index + 1}</td>
+                                <td className="px-3 py-2 font-semibold text-ag-ink">{category.name}</td>
+                                <td className="px-3 py-2">
                                   <span
                                     className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
                                       productCount > 0
-                                        ? 'bg-slate-100 text-slate-700'
-                                        : 'bg-slate-50 text-slate-400'
+                                        ? 'bg-ag-amber/15 text-ag-gold border border-ag-gold/25'
+                                        : 'bg-ag-mist text-ag-ink/45'
                                     }`}
                                   >
                                     {productCount} {productCount === 1 ? 'product' : 'products'}
                                   </span>
                                 </td>
-                                <td className="px-5 py-4">
+                                <td className="px-3 py-2">
                                   <div className="flex items-center justify-end gap-1">
                                     <button
                                       type="button"
                                       onClick={() => startEditCategory(category)}
-                                      className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                                      className={adminBtnIcon}
                                       title="Edit category"
                                     >
                                       <Edit2 className="w-4 h-4" />
@@ -1035,7 +1084,7 @@ export default function DashboardClient() {
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteCategory(category._id)}
-                                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
+                                      className={adminBtnIconDanger}
                                       title="Delete category"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -1047,7 +1096,8 @@ export default function DashboardClient() {
                           })
                         )}
                       </tbody>
-                    </table>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1067,8 +1117,8 @@ export default function DashboardClient() {
           }}
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
         >
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+          <div className="bg-white rounded-xl shadow-2xl border border-ag-border w-full max-w-md overflow-hidden">
+            <div className="px-5 py-3 bg-ag-sidebar text-white flex justify-between items-center">
               <div>
                 <h2 className="text-base font-bold">
                   {categoryFormMode === 'edit' ? 'Edit Category' : 'Add Category'}
@@ -1083,23 +1133,23 @@ export default function DashboardClient() {
                 type="button"
                 disabled={categorySubmitting}
                 onClick={closeCategoryModal}
-                className="p-1.5 hover:bg-white/10 rounded-lg transition disabled:opacity-50"
+                className={`p-1.5 ${adminBtnSidebarChrome}`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-5">
               {categoryModalError && (
-                <div className="bg-red-50 text-red-600 text-sm font-semibold p-3 rounded-xl mb-4 border border-red-100 flex items-center gap-2">
+                <div className="bg-red-50 text-red-600 text-sm font-semibold p-3 rounded-lg mb-3 border border-red-100 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   {categoryModalError}
                 </div>
               )}
 
-              <form onSubmit={handleCategoryFormSubmit} className="space-y-5">
+              <form onSubmit={handleCategoryFormSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-ag-ink/55 uppercase tracking-wider mb-2">
                     Category name
                   </label>
                   <input
@@ -1110,23 +1160,23 @@ export default function DashboardClient() {
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="e.g. Identity Cards"
                     disabled={categorySubmitting}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm disabled:opacity-60"
+                    className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary text-sm disabled:opacity-60"
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                <div className="flex justify-end gap-3 pt-2 border-t border-ag-border">
                   <button
                     type="button"
                     disabled={categorySubmitting}
                     onClick={closeCategoryModal}
-                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                    className={`${adminBtnOutlineBlue} disabled:opacity-50`}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={categorySubmitting}
-                    className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition disabled:opacity-60 min-w-[120px]"
+                    className={`${adminBtnPrimary} disabled:opacity-60 min-w-[120px]`}
                   >
                     {categorySubmitting
                       ? 'Saving...'
@@ -1152,49 +1202,58 @@ export default function DashboardClient() {
           }}
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
         >
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="px-8 py-5 bg-slate-900 text-white flex justify-between items-center sticky top-0 z-10">
+          <div className="bg-white rounded-xl shadow-2xl border border-ag-border w-full max-w-7xl max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Modal Header — fixed; body scrolls with branded scrollbar */}
+            <div className="px-5 sm:px-6 py-3.5 bg-ag-sidebar text-white flex justify-between items-center shrink-0 rounded-t-xl">
               <h2 className="text-lg font-bold">
                 {editingProduct ? 'Modify Product Listing' : 'Add New Product Listing'}
               </h2>
               <button 
                 disabled={submitting}
                 onClick={() => setIsProductModalOpen(false)}
-                className="p-1 hover:bg-white/10 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`p-1.5 ${adminBtnSidebarChrome}`}
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-4 sm:p-8">
+            <form onSubmit={handleProductSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-y-auto ag-scrollbar">
+            <div className="p-4 sm:p-5 space-y-4">
               {productFormError && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-sm font-semibold mb-6 flex items-center gap-2">
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg border border-red-100 text-sm font-semibold flex items-center gap-2">
                   <AlertCircle className="w-5 h-5" /> {productFormError}
                 </div>
               )}
 
-              <form onSubmit={handleProductSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Left Column */}
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Product Title*</label>
+              <div className="space-y-4">
+                {/* —— Product details —— */}
+                <section className="rounded-xl border border-ag-border bg-ag-canvas/50 p-4 sm:p-5 space-y-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-ag-ink">Product details</h3>
+                    <p className="text-xs text-ag-ink/50 mt-0.5">
+                      Fields marked with <span className="text-red-600 font-bold">*</span> are required.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4 lg:items-end">
+                    <div className="lg:col-span-5 min-w-0">
+                      <ModalFieldLabel htmlFor="product-title" required>
+                        Product title
+                      </ModalFieldLabel>
                       <input
+                        id="product-title"
                         type="text"
                         required
                         value={productTitle}
                         onChange={(e) => setProductTitle(e.target.value)}
                         placeholder="e.g. Swivel Hooks Set"
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm"
+                        className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 focus:ring-offset-1 text-sm bg-white"
                       />
                     </div>
 
-
-
-                    <div className="custom-select-container relative">
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Category*</label>
+                    <div className="custom-select-container relative lg:col-span-4 min-w-0">
+                      <ModalFieldLabel required>Category</ModalFieldLabel>
                       <div className="relative">
                         <button
                           type="button"
@@ -1202,18 +1261,18 @@ export default function DashboardClient() {
                             setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
                             setIsRatingDropdownOpen(false);
                           }}
-                          className="w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm bg-white text-left flex justify-between items-center transition shadow-sm hover:border-slate-300"
+                          className="w-full px-4 py-2.5 pr-10 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary text-sm bg-white text-left flex justify-between items-center gap-2 transition shadow-sm hover:border-ag-ink/30"
                         >
-                          <span className={productCategory ? 'text-slate-800 font-medium' : 'text-slate-400'}>
+                          <span className={`truncate ${productCategory ? 'text-ag-ink font-medium' : 'text-slate-400'}`}>
                             {productCategory || 'Select Category'}
                           </span>
-                          <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <svg className={`w-4 h-4 shrink-0 text-ag-ink transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.25" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                           </svg>
                         </button>
                         
                         {isCategoryDropdownOpen && (
-                          <div className="absolute z-20 w-full mt-1.5 bg-white border border-slate-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1 animate-in fade-in duration-100">
+                          <div className="absolute z-20 w-full mt-1.5 bg-white border border-ag-border rounded-lg shadow-xl max-h-60 overflow-y-auto ag-scrollbar ag-scrollbar-thin py-1 animate-in fade-in duration-100">
                             {categories.length === 0 ? (
                               <div className="px-4 py-2 text-sm text-slate-400">No categories available</div>
                             ) : (
@@ -1225,13 +1284,13 @@ export default function DashboardClient() {
                                     setProductCategory(c.name);
                                     setIsCategoryDropdownOpen(false);
                                   }}
-                                  className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition flex items-center justify-between ${
-                                    productCategory === c.name ? 'bg-slate-50 text-slate-900 font-semibold' : 'text-slate-600'
+                                  className={`w-full px-4 py-2 text-left text-sm hover:bg-ag-active transition flex items-center justify-between ${
+                                    productCategory === c.name ? 'bg-ag-active text-ag-active-text font-semibold' : 'text-ag-ink/70'
                                   }`}
                                 >
                                   <span>{c.name}</span>
                                   {productCategory === c.name && (
-                                    <svg className="w-4 h-4 text-slate-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 text-ag-active-text" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                     </svg>
                                   )}
@@ -1243,8 +1302,8 @@ export default function DashboardClient() {
                       </div>
                     </div>
 
-                    <div className="custom-select-container relative">
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Admin Star Rating (1 to 5)*</label>
+                    <div className="custom-select-container relative lg:col-span-3 min-w-0">
+                      <ModalFieldLabel required>Admin star rating (1–5)</ModalFieldLabel>
                       <div className="relative">
                         <button
                           type="button"
@@ -1252,21 +1311,21 @@ export default function DashboardClient() {
                             setIsRatingDropdownOpen(!isRatingDropdownOpen);
                             setIsCategoryDropdownOpen(false);
                           }}
-                          className="w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm bg-white text-left flex justify-between items-center transition shadow-sm hover:border-slate-300"
+                          className="w-full px-4 py-2.5 pr-10 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary text-sm bg-white text-left flex justify-between items-center gap-2 transition shadow-sm hover:border-ag-ink/30"
                         >
-                          <span className="text-slate-800 font-medium flex items-center gap-1.5">
-                            <span className="text-yellow-400 font-semibold">
+                          <span className="text-ag-ink font-medium flex items-center gap-1.5 min-w-0 truncate">
+                            <span className="text-ag-amber font-semibold shrink-0">
                               {'★'.repeat(productRating)}{'☆'.repeat(5 - productRating)}
                             </span>
-                            <span className="text-slate-500 text-xs">({productRating} Stars)</span>
+                            <span className="text-slate-500 text-xs hidden sm:inline">({productRating} Stars)</span>
                           </span>
-                          <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isRatingDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <svg className={`w-4 h-4 shrink-0 text-ag-ink transition-transform duration-200 ${isRatingDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.25" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                           </svg>
                         </button>
                         
                         {isRatingDropdownOpen && (
-                          <div className="absolute z-20 w-full mt-1.5 bg-white border border-slate-100 rounded-xl shadow-xl py-1 animate-in fade-in duration-100">
+                          <div className="absolute z-20 w-full mt-1.5 bg-white border border-ag-border rounded-lg shadow-xl py-1 animate-in fade-in duration-100">
                             {[5, 4, 3, 2, 1].map((ratingVal) => (
                               <button
                                 key={ratingVal}
@@ -1275,18 +1334,18 @@ export default function DashboardClient() {
                                   setProductRating(ratingVal);
                                   setIsRatingDropdownOpen(false);
                                 }}
-                                className={`w-full px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition flex items-center justify-between ${
-                                  productRating === ratingVal ? 'bg-slate-50 text-slate-900 font-semibold' : 'text-slate-600'
+                                className={`w-full px-4 py-2.5 text-left text-sm hover:bg-ag-active transition flex items-center justify-between ${
+                                  productRating === ratingVal ? 'bg-ag-active text-ag-active-text font-semibold' : 'text-ag-ink/70'
                                 }`}
                               >
                                 <span className="flex items-center gap-1.5">
-                                  <span className="text-yellow-400">
+                                  <span className="text-ag-amber">
                                     {'★'.repeat(ratingVal)}{'☆'.repeat(5 - ratingVal)}
                                   </span>
                                   <span className="text-slate-400 text-xs">({ratingVal} Stars)</span>
                                 </span>
                                 {productRating === ratingVal && (
-                                  <svg className="w-4 h-4 text-slate-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                  <svg className="w-4 h-4 text-ag-active-text" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                   </svg>
                                 )}
@@ -1296,119 +1355,177 @@ export default function DashboardClient() {
                         )}
                       </div>
                     </div>
-
-
                   </div>
 
-                  {/* Right Column */}
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Description*</label>
-                      <textarea
-                        required
-                        rows="3"
-                        value={productDescription}
-                        onChange={(e) => setProductDescription(e.target.value)}
-                        placeholder="Describe the product and its target uses..."
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm"
-                      />
-                    </div>
+                  <div>
+                    <ModalFieldLabel htmlFor="product-description" required>
+                      Description
+                    </ModalFieldLabel>
+                    <textarea
+                      id="product-description"
+                      required
+                      rows={4}
+                      value={productDescription}
+                      onChange={(e) => setProductDescription(e.target.value)}
+                      placeholder="Describe the product and its target uses..."
+                      className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 focus:ring-offset-1 text-sm bg-white resize-y min-h-[6.5rem]"
+                    />
+                  </div>
+                </section>
 
+                {/* —— Highlights & note —— */}
+                <section className="rounded-xl border border-ag-border bg-white p-4 sm:p-5">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Highlights (List bullet points)</label>
-                      <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div>
+                          <h3 className="text-sm font-bold text-ag-ink">Highlights</h3>
+                          <p className="text-xs text-ag-ink/50 mt-0.5">Bullet points shown on the product page.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddHighlight}
+                          className={adminBtnSmallOutlineBlue}
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add bullet
+                        </button>
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto overflow-x-visible ag-scrollbar ag-scrollbar-thin py-1.5 px-1 -mx-1">
+                        <div className="space-y-1.5">
                         {productHighlights.map((hl, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
+                          <div key={idx} className="flex items-center gap-1.5">
+                            <span className="text-xs font-semibold text-ag-ink/35 w-4 shrink-0 tabular-nums">{idx + 1}.</span>
                             <input
                               type="text"
                               value={hl}
                               onChange={(e) => handleHighlightChange(idx, e.target.value)}
-                              placeholder={`Highlight #${idx + 1}`}
-                              className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm"
+                              placeholder={`Highlight ${idx + 1}`}
+                              className="flex-1 min-w-0 px-3 py-1.5 border border-ag-border rounded-lg text-sm bg-white focus:outline-none focus:border-ag-primary focus:ring-2 focus:ring-ag-primary/30 focus:ring-offset-1"
                             />
                             <button
                               type="button"
                               onClick={() => handleRemoveHighlight(idx)}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                              className={adminBtnIconDanger}
+                              title="Remove highlight"
                             >
                               <X className="w-4 h-4" />
                             </button>
                           </div>
                         ))}
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={handleAddHighlight}
-                        className="mt-2 text-xs font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Add Bullet Point
-                      </button>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Note (Disclaimer/Conditions)</label>
+                      <h3 className="text-sm font-bold text-ag-ink mb-1">Note</h3>
+                      <p className="text-xs text-ag-ink/50 mb-2">Disclaimer or conditions (e.g. GST, quantity pricing).</p>
+                      <label className="sr-only">Note (disclaimer)</label>
                       <textarea
-                        rows="2"
+                        rows={6}
                         value={productNote}
                         onChange={(e) => setProductNote(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm"
+                        className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white resize-y min-h-[10rem]"
                       />
                     </div>
                   </div>
-                </div>
+                </section>
 
-                <hr className="border-slate-100" />
+                {/* —— Product media —— */}
+                <section className="rounded-xl border border-ag-border bg-white p-3 sm:p-4">
+                  <div className="mb-2">
+                    <h3 className="text-sm font-bold text-ag-ink">
+                      Product media
+                      <span className="text-red-600 font-bold ml-0.5" aria-hidden="true">
+                        *
+                      </span>
+                    </h3>
+                    <p className="text-xs text-ag-ink/50 mt-0.5">At least one photo required. Pick a cover thumbnail.</p>
+                  </div>
 
-                {/* IMAGES UPLOAD SECTION */}
-                <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Product Media</h3>
-                  
-                  <div className="grid md:grid-cols-4 gap-4 items-center">
-                    {/* Upload Box */}
-                    <div className="border-2 border-dashed border-slate-200 hover:border-slate-400 p-6 rounded-2xl flex flex-col items-center justify-center cursor-pointer relative text-slate-500 transition aspect-[4/3] max-h-40">
+                  <div className="flex flex-wrap gap-2">
+                    <div
+                      className={`relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer text-ag-ink/55 transition w-[7.5rem] h-[7.5rem] sm:w-32 sm:h-32 shrink-0 ${
+                        uploading ? 'border-ag-ink/60 bg-ag-mist/50' : 'border-ag-border hover:border-ag-ink/50 bg-ag-canvas/30'
+                      }`}
+                    >
                       <input
                         type="file"
                         multiple
                         accept="image/*"
                         onChange={handleImageUpload}
                         disabled={uploading}
-                        required
-                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
                       />
-                      <Upload className="w-6 h-6 mb-2" />
-                      <span className="text-xs font-bold text-center">
-                        {uploading ? 'Uploading...' : 'Choose Photos'}
-                      </span>
-                      <span className="text-[10px] text-slate-400 mt-1">Multi-upload ready</span>
+                      {uploading ? (
+                        <div
+                          className="flex flex-col items-center justify-center gap-1.5 px-1"
+                          aria-live="polite"
+                          aria-busy="true"
+                        >
+                          <div className="relative w-[3.25rem] h-[3.25rem]">
+                            <svg className="w-full h-full -rotate-90" viewBox="0 0 40 40" aria-hidden="true">
+                              <circle
+                                cx="20"
+                                cy="20"
+                                r="17"
+                                fill="none"
+                                stroke="#e6f1f7"
+                                strokeWidth="3.5"
+                              />
+                              <circle
+                                cx="20"
+                                cy="20"
+                                r="17"
+                                fill="none"
+                                stroke="#0e3a56"
+                                strokeWidth="3.5"
+                                strokeLinecap="round"
+                                pathLength="100"
+                                strokeDasharray="100"
+                                strokeDashoffset={100 - uploadProgress}
+                              />
+                            </svg>
+                            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-extrabold text-ag-ink tabular-nums">
+                              {uploadProgress}%
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-semibold text-ag-ink/75 text-center leading-tight animate-pulse">
+                            Uploading.....
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-5 h-5 mb-1" />
+                          <span className="text-[11px] font-bold text-center leading-tight px-1">Choose photos</span>
+                        </>
+                      )}
                     </div>
 
-                    {/* Previews */}
                     {productImages.map((url, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`relative rounded-2xl overflow-hidden border aspect-[4/3] max-h-40 group flex items-center justify-center bg-slate-50 ${
-                          productThumbnail === url ? 'ring-4 ring-slate-900' : ''
+                      <div
+                        key={idx}
+                        className={`relative group w-[7.5rem] h-[7.5rem] sm:w-32 sm:h-32 shrink-0 rounded-xl border ${
+                          productThumbnail === url ? 'ring-2 ring-ag-ink border-ag-ink' : 'border-ag-border'
                         }`}
                       >
-                        <img 
-                          src={url} 
-                          alt="preview" 
-                          className="w-full h-full object-cover" 
-                        />
-                        
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2 p-2">
+                        <div className="absolute inset-0 overflow-hidden rounded-[inherit] bg-ag-canvas/40">
+                          <img src={url} alt="preview" className="w-full h-full object-cover" />
+                        </div>
+
+                        <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-black/55 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100" />
+
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                           <button
                             type="button"
                             onClick={() => setProductThumbnail(url)}
-                            className="bg-white text-slate-900 text-[10px] font-bold px-2 py-1 rounded-lg hover:bg-slate-100"
+                            className={`${adminBtnSmallPrimary} pointer-events-auto shadow-md ring-2 ring-white/20`}
                           >
-                            {productThumbnail === url ? '★ Cover Image' : 'Set as Cover'}
+                            {productThumbnail === url ? '★ Cover' : 'Set cover'}
                           </button>
-                          
                           <button
                             type="button"
                             onClick={() => removeImage(url)}
-                            className="bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700"
+                            className={`${adminBtnDangerSolid} p-1.5 rounded-full min-w-0 pointer-events-auto shadow-md`}
                             title="Remove Photo"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1416,37 +1533,37 @@ export default function DashboardClient() {
                         </div>
 
                         {productThumbnail === url && (
-                          <div className="absolute top-2 left-2 bg-slate-900 text-white text-[9px] font-bold px-2 py-0.5 rounded-md shadow flex items-center gap-1">
-                            <Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" /> Cover
+                          <div className="absolute top-1.5 left-1.5 z-20 bg-ag-sidebar text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow flex items-center gap-0.5">
+                            <Star className="w-2.5 h-2.5 fill-ag-amber text-ag-amber" /> Cover
                           </div>
                         )}
                       </div>
                     ))}
                   </div>
-                </div>
+                </section>
 
-                {/* SECTION SETUP */}
-                <div className="border-t border-slate-100 pt-6">
-                  <div className="flex justify-between items-center mb-4">
+                {/* —— Rich text sections —— */}
+                <section className="rounded-xl border border-ag-border bg-ag-canvas/50 p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
                     <div>
-                      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Section Setup</h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5">Add rich text sections that will appear after the Note on the product page.</p>
+                      <h3 className="text-sm font-bold text-ag-ink">Section setup</h3>
+                      <p className="text-xs text-ag-ink/50 mt-0.5 max-w-2xl">Rich text blocks appear after the note on the public product page.</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setProductSections([...productSections, { content: '' }])}
-                      className="text-xs font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50"
+                      className={adminBtnSmallOutlineBlue}
                     >
                       <Plus className="w-3.5 h-3.5" /> Add Section
                     </button>
                   </div>
 
                   {productSections.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-3 text-center border border-dashed border-slate-200 rounded-xl">No sections added yet.</p>
+                    <p className="text-xs text-slate-400 py-3 text-center border border-dashed border-slate-200 rounded-lg">No sections added yet.</p>
                   ) : (
                     <div className="space-y-4">
                       {productSections.map((sec, idx) => (
-                        <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col gap-3 relative group">
+                        <div key={idx} className="bg-slate-50 p-4 rounded-xl border border-ag-border flex flex-col gap-3 relative group">
                           <div className="flex justify-between items-center">
                             <span className="text-xs font-bold text-slate-600">TEXT SECTION - {idx + 1}</span>
                             <div className="flex items-center gap-1">
@@ -1461,7 +1578,7 @@ export default function DashboardClient() {
                                   next[idx - 1] = temp;
                                   setProductSections(next);
                                 }}
-                                className="p-1 text-slate-500 hover:bg-slate-200 rounded disabled:opacity-30 font-semibold"
+                                className={adminBtnSectionMove}
                                 title="Move Up"
                               >
                                 ↑
@@ -1477,7 +1594,7 @@ export default function DashboardClient() {
                                   next[idx + 1] = temp;
                                   setProductSections(next);
                                 }}
-                                className="p-1 text-slate-500 hover:bg-slate-200 rounded disabled:opacity-30 font-semibold"
+                                className={adminBtnSectionMove}
                                 title="Move Down"
                               >
                                 ↓
@@ -1489,7 +1606,7 @@ export default function DashboardClient() {
                                   const next = productSections.filter((_, i) => i !== idx);
                                   setProductSections(next);
                                 }}
-                                className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                                className={adminBtnIconDanger}
                                 title="Remove Section"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1509,55 +1626,57 @@ export default function DashboardClient() {
                       ))}
                     </div>
                   )}
-                </div>
-
-                <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
-                  <button
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => setIsProductModalOpen(false)}
-                    className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className={`px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition flex items-center justify-center gap-2 ${
-                      submitting ? 'opacity-70 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {submitting ? (
-                      <>
-                        <svg 
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          fill="none" 
-                          viewBox="0 0 24 24"
-                        >
-                          <circle 
-                            className="opacity-25" 
-                            cx="12" 
-                            cy="12" 
-                            r="10" 
-                            stroke="currentColor" 
-                            strokeWidth="4"
-                          />
-                          <path 
-                            className="opacity-75" 
-                            fill="currentColor" 
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Changes'
-                    )}
-                  </button>
-                </div>
-              </form>
+                </section>
+              </div>
             </div>
+            </div>
+
+            <div className="shrink-0 border-t border-ag-border bg-white px-4 sm:px-5 py-3 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 rounded-b-xl">
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => setIsProductModalOpen(false)}
+                className={`${adminBtnOutlineBlue} disabled:cursor-not-allowed`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className={`${adminBtnPrimary} ${
+                  submitting ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
+              >
+                {submitting ? (
+                  <>
+                    <svg 
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24"
+                    >
+                      <circle 
+                        className="opacity-25" 
+                        cx="12" 
+                        cy="12" 
+                        r="10" 
+                        stroke="currentColor" 
+                        strokeWidth="4"
+                      />
+                      <path 
+                        className="opacity-75" 
+                        fill="currentColor" 
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+            </form>
           </div>
         </div>
       )}
@@ -1573,20 +1692,20 @@ export default function DashboardClient() {
           }}
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
         >
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100">
+          <div className="bg-white rounded-xl shadow-2xl border border-ag-border w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100">
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600 shrink-0">
                   <Trash2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">{confirmTitle}</h3>
+                  <h3 className="text-lg font-bold text-ag-ink">{confirmTitle}</h3>
                   <p className="text-xs text-slate-500 mt-0.5">Confirmation Required</p>
                 </div>
               </div>
               
               {confirmError && (
-                <div className="bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-xl mb-4 border border-red-100 flex items-center gap-2">
+                <div className="bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-lg mb-4 border border-red-100 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" /> {confirmError}
                 </div>
               )}
@@ -1595,12 +1714,12 @@ export default function DashboardClient() {
                 {confirmMessage}
               </p>
               
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-ag-border">
                 <button
                   type="button"
                   disabled={confirmLoading}
                   onClick={() => setIsConfirmOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                  className={`${adminBtnOutlineBlue} text-xs px-4 py-2`}
                 >
                   Cancel
                 </button>
@@ -1608,7 +1727,7 @@ export default function DashboardClient() {
                   type="button"
                   disabled={confirmLoading}
                   onClick={handleConfirmAction}
-                  className="px-5 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 transition flex items-center gap-1.5 disabled:opacity-70 shadow-sm"
+                  className={`${adminBtnDangerSolid} text-xs px-5 py-2`}
                 >
                   {confirmLoading ? (
                     <>

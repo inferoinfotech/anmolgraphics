@@ -3,6 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect } from 'react';
+import { adminBtnToolbar, adminBtnToolbarMd } from '@/components/Admin/adminButtonClasses';
 
 export default function TiptapEditor({ value, onChange }) {
   const editor = useEditor({
@@ -41,15 +42,13 @@ export default function TiptapEditor({ value, onChange }) {
   };
 
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-slate-900 focus-within:border-transparent transition">
+    <div className="border border-ag-border rounded-lg overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-ag-primary/40 focus-within:border-transparent transition">
       {/* Toolbar */}
-      <div className="flex flex-wrap gap-1 p-2 bg-slate-50 border-b border-slate-200">
+      <div className="flex flex-wrap gap-1 p-2 bg-ag-mist border-b border-ag-border">
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition hover:bg-slate-200/70 ${
-            editor.isActive('bold') ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-700'
-          }`}
+          className={adminBtnToolbarMd(editor.isActive('bold'), 'font-bold')}
           title="Bold"
         >
           B
@@ -57,9 +56,7 @@ export default function TiptapEditor({ value, onChange }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`px-3 py-1.5 rounded-lg text-xs italic transition hover:bg-slate-200/70 ${
-            editor.isActive('italic') ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-700'
-          }`}
+          className={adminBtnToolbarMd(editor.isActive('italic'), 'italic')}
           title="Italic"
         >
           I
@@ -67,15 +64,13 @@ export default function TiptapEditor({ value, onChange }) {
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`px-3 py-1.5 rounded-lg text-xs transition hover:bg-slate-200/70 ${
-            editor.isActive('bulletList') ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-700'
-          }`}
+          className={adminBtnToolbarMd(editor.isActive('bulletList'))}
           title="Bullet List"
         >
           • List
         </button>
-        
-        <div className="h-6 w-px bg-slate-200 mx-1 self-center" />
+
+        <div className="h-6 w-px bg-ag-border mx-1 self-center" />
 
         {/* Headings */}
         {[1, 2, 3, 4, 5, 6].map((level) => (
@@ -83,9 +78,7 @@ export default function TiptapEditor({ value, onChange }) {
             key={level}
             type="button"
             onClick={() => toggleHeading(level)}
-            className={`px-2 py-1 rounded-lg text-xs font-semibold transition hover:bg-slate-200/70 ${
-              editor.isActive('heading', { level }) ? 'bg-slate-900 text-white hover:bg-slate-800' : 'text-slate-500'
-            }`}
+            className={adminBtnToolbar(editor.isActive('heading', { level }))}
             title={`Heading ${level}`}
           >
             H{level}

@@ -2,4 +2,47 @@
 
 :root {
   --font-roboto: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+  --ag-sidebar: #0e3a56;
+  --ag-primary: #1b6e9c;
+  --ag-mist: #e6f1f7;
+  --ag-gold: #c48a3a;
+  --ag-amber: #f0b552;
+  --ag-olive: #8a9a2b;
+  --ag-lime: #b5d23b;
+  --ag-canvas: #f6f8fa;
+  --ag-sidebar-text: #cfe0ea;
+  --ag-ink: #0e3a56;
+  --ag-ink-hover: #0a3048;
+  --ag-border: #d5e3ec;
+}
+
+/* Branded scrollbars for admin panels, modals, and sidebar */
+.ag-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ag-ink) var(--ag-mist);
+}
+
+.ag-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.ag-scrollbar::-webkit-scrollbar-track {
+  background: var(--ag-mist);
+  border-radius: 10px;
+}
+
+.ag-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--ag-ink);
+  border-radius: 10px;
+  border: 2px solid var(--ag-mist);
+}
+
+.ag-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--ag-ink-hover);
+}
+
+.ag-scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }

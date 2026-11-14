@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { encryptLoginPayload, importLoginPublicKey } from '@/lib/adminLoginCryptoClient';
 import { useAdminToaster, validateAdminLoginForm } from '@/components/Admin/AdminToaster';
+import { adminBtnPrimary, adminBtnIconMuted } from '@/components/Admin/adminButtonClasses';
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
@@ -132,23 +133,23 @@ export default function AdminLogin() {
   const inputErrorClass = (field) =>
     fieldErrors[field] || (authFailed && field === 'username')
       ? 'border-red-300 focus:ring-red-500/30 focus:border-red-400'
-      : 'border-slate-200 focus:ring-slate-900 focus:border-transparent';
+      : 'border-ag-border focus:ring-ag-primary focus:border-transparent';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ag-canvas flex items-center justify-center p-4">
       <Toaster />
 
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-        <div className="bg-slate-900 px-8 py-10 text-center">
+      <div className="w-full max-w-md bg-ag-card rounded-xl shadow-xl border border-ag-border overflow-hidden">
+        <div className="bg-ag-sidebar px-8 py-10 text-center">
           <img
             src="/assets/images/erasebg-transformed.png"
             alt="Anmol Graphics Logo"
-            className="w-44 mx-auto mb-4 bg-white/10 p-2 rounded-xl backdrop-blur-md"
+            className="w-44 mx-auto mb-4 bg-white/10 p-2 rounded-lg backdrop-blur-md"
           />
           <h2 className="text-xl font-bold text-white tracking-wide">
             Admin Portal
           </h2>
-          <p className="text-slate-400 text-xs mt-1">
+          <p className="text-ag-sidebar-text/90 text-xs mt-1">
             Secure admin access for Anmol Graphics
           </p>
         </div>
@@ -173,7 +174,7 @@ export default function AdminLogin() {
                 }}
                 placeholder="Enter your username"
                 aria-invalid={Boolean(fieldErrors.username || authFailed)}
-                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition text-sm text-slate-800 ${inputErrorClass('username')}`}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition text-sm text-ag-ink ${inputErrorClass('username')}`}
               />
               {fieldErrors.username?.trim() ? (
                 <p id="username-error" className="mt-1.5 text-xs font-medium text-red-600">
@@ -202,12 +203,12 @@ export default function AdminLogin() {
                   placeholder="••••••••"
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                  className={`w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 transition text-sm text-slate-800 ${inputErrorClass('password')}`}
+                  className={`w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition text-sm text-ag-ink ${inputErrorClass('password')}`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 ${adminBtnIconMuted}`}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   tabIndex={-1}
                 >
@@ -224,7 +225,7 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={loading || !loginKeyReady}
-              className={`w-full py-3.5 bg-slate-900 text-white rounded-xl font-semibold text-sm hover:bg-slate-800 transition active:scale-[0.98] flex items-center justify-center gap-2 ${
+              className={`w-full py-3.5 ${adminBtnPrimary} active:scale-[0.98] ${
                 loading || !loginKeyReady ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >

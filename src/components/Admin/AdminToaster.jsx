@@ -5,8 +5,8 @@ import { AlertCircle, Check, Info, X } from 'lucide-react';
 
 const TOAST_STYLES = {
   success: {
-    container: 'bg-green-50 border-green-200 text-green-900',
-    icon: 'text-green-600',
+    container: 'bg-ag-lime/15 border-ag-lime/40 text-ag-olive',
+    icon: 'text-ag-olive',
     Icon: Check,
   },
   error: {
@@ -15,8 +15,8 @@ const TOAST_STYLES = {
     Icon: AlertCircle,
   },
   info: {
-    container: 'bg-slate-900 border-slate-800 text-white',
-    icon: 'text-slate-300',
+    container: 'bg-ag-sidebar border-ag-sidebar text-white',
+    icon: 'text-white/80',
     Icon: Info,
   },
 };
@@ -58,7 +58,7 @@ export function useAdminToaster() {
               <div
                 key={item.id}
                 role="alert"
-                className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg animate-in slide-in-from-top-2 duration-200 ${style.container}`}
+                className={`pointer-events-auto flex items-start gap-3 p-4 rounded-lg border shadow-lg animate-in slide-in-from-top-2 duration-200 ${style.container}`}
               >
                 <IconComponent className={`w-5 h-5 shrink-0 mt-0.5 ${style.icon}`} />
                 <p className="text-sm font-medium flex-1 leading-snug">{item.message}</p>

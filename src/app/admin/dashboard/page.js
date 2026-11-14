@@ -12,7 +12,7 @@ export default async function AdminDashboardPage() {
   }
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500 text-sm">Loading dashboard...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-ag-canvas flex items-center justify-center text-ag-ink/60 text-sm font-roboto">Loading dashboard...</div>}>
       <DashboardClient />
     </Suspense>
   );
