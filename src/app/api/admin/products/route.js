@@ -22,7 +22,9 @@ export async function GET() {
     }
 
     await dbConnect();
-    const products = await Product.find({}).sort({ sortOrder: 1, createdAt: -1 });
+    const products = await Product.find({})
+      .sort({ sortOrder: 1, createdAt: -1 })
+      .lean();
     return NextResponse.json({ products });
   } catch (error) {
     console.error('Fetch products error:', error);
@@ -51,6 +53,11 @@ export async function POST(req) {
       thumbnail,
       slug,
       sections,
+      availabilityLabel,
+      material,
+      orderType,
+      specifications,
+      customisation,
     } = body;
 
     if (!title || !description || !category) {
@@ -88,6 +95,11 @@ export async function POST(req) {
       images: Array.isArray(images) ? images : [],
       thumbnail: thumbnail || (images && images[0] ? images[0] : '/placeholder.svg'),
       sections: Array.isArray(sections) ? sections : [],
+      availabilityLabel: availabilityLabel?.trim() || '',
+      material: material?.trim() || '',
+      orderType: orderType?.trim() || '',
+      specifications: specifications?.trim() || '',
+      customisation: customisation?.trim() || '',
     });
 
     await newProduct.save();

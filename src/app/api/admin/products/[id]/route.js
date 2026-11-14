@@ -40,6 +40,11 @@ export async function PUT(req, { params }) {
       thumbnail,
       slug,
       sections,
+      availabilityLabel,
+      material,
+      orderType,
+      specifications,
+      customisation,
     } = body;
 
     if (!title || !description || !category) {
@@ -85,10 +90,26 @@ export async function PUT(req, { params }) {
     product.images = Array.isArray(images) ? images : [];
     product.thumbnail = thumbnail || (images && images[0] ? images[0] : '/placeholder.svg');
     product.sections = Array.isArray(sections) ? sections : [];
+    if (availabilityLabel !== undefined) {
+      product.availabilityLabel = String(availabilityLabel).trim();
+    }
+    if (material !== undefined) {
+      product.material = String(material).trim();
+    }
+    if (orderType !== undefined) {
+      product.orderType = String(orderType).trim();
+    }
+    if (specifications !== undefined) {
+      product.specifications = String(specifications).trim();
+    }
+    if (customisation !== undefined) {
+      product.customisation = String(customisation).trim();
+    }
 
     await product.save();
 
-    return NextResponse.json({ success: true, product });
+    const plain = product.toObject ? product.toObject() : product;
+    return NextResponse.json({ success: true, product: plain });
   } catch (error) {
     console.error('Update product error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

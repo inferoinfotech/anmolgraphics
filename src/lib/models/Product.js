@@ -48,6 +48,29 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     default: 'Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.',
   },
+  availabilityLabel: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  material: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  orderType: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  specifications: {
+    type: String,
+    default: '',
+  },
+  customisation: {
+    type: String,
+    default: '',
+  },
   sections: [{
     content: {
       type: String,
@@ -60,4 +83,9 @@ const ProductSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-export default mongoose.models.Product || mongoose.model('Product', ProductSchema);
+// Re-register schema so new paths apply (Next.js hot reload keeps old model)
+if (mongoose.models.Product) {
+  delete mongoose.models.Product;
+}
+
+export default mongoose.model('Product', ProductSchema);

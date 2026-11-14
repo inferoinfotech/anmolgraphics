@@ -14,6 +14,20 @@
 }
 
 :root {
+  --ag-ocean: #0e3a56;
+  --ag-blue: #1b6e9c;
+  --ag-gold: #c48a3a;
+  --ag-amber: #f0b552;
+  --ag-olive: #8a9a2b;
+  --ag-mist: #e6f1f7;
+  --ag-page-bg: #f6f8fa;
+  --ag-text: #12293a;
+  --ag-muted: #5b7283;
+  --ag-border: #dce6ed;
+  --ag-warm: #faeeda;
+  --ag-warm-border: #e8d7b8;
+  --ag-star-empty: #d9dee3;
+
   --background: #ffffff;
   --foreground: #171717;
   --font-geist-sans: "Geist", sans-serif;

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import TiptapEditor from '@/components/Admin/TiptapEditor';
+import ManageableOptionSelect from '@/components/Admin/ManageableOptionSelect';
 import { useAdminToaster } from '@/components/Admin/AdminToaster';
 import {
   adminBtnPrimary,
@@ -67,6 +68,8 @@ export default function DashboardClient() {
   // Data States
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [materialOptions, setMaterialOptions] = useState([]);
+  const [orderTypeOptions, setOrderTypeOptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Category Form State
@@ -86,6 +89,11 @@ export default function DashboardClient() {
   const [productCategory, setProductCategory] = useState('');
   const [productRating, setProductRating] = useState(5);
   const [productDescription, setProductDescription] = useState('');
+  const [productAvailabilityLabel, setProductAvailabilityLabel] = useState('');
+  const [productMaterial, setProductMaterial] = useState('');
+  const [productOrderType, setProductOrderType] = useState('');
+  const [productSpecifications, setProductSpecifications] = useState('');
+  const [productCustomisation, setProductCustomisation] = useState('');
   const [productNote, setProductNote] = useState('Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
   const [productHighlights, setProductHighlights] = useState(['']);
   const [productImages, setProductImages] = useState([]); // array of urls
@@ -125,8 +133,15 @@ export default function DashboardClient() {
     try {
       const catRes = await fetch('/api/admin/categories');
       const prodRes = await fetch('/api/admin/products');
-      
-      if (catRes.status === 401 || prodRes.status === 401) {
+      const matRes = await fetch('/api/admin/product-options?type=material');
+      const orderRes = await fetch('/api/admin/product-options?type=orderType');
+
+      if (
+        catRes.status === 401 ||
+        prodRes.status === 401 ||
+        matRes.status === 401 ||
+        orderRes.status === 401
+      ) {
         toast('Session expired. Please sign in again.', 'error');
         router.push('/admin/login');
         return;
@@ -134,9 +149,13 @@ export default function DashboardClient() {
 
       const catData = await catRes.json();
       const prodData = await prodRes.json();
+      const matData = matRes.ok ? await matRes.json() : { options: [] };
+      const orderData = orderRes.ok ? await orderRes.json() : { options: [] };
 
       setCategories(catData.categories || []);
       setProducts(prodData.products || []);
+      setMaterialOptions(matData.options || []);
+      setOrderTypeOptions(orderData.options || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast('Failed to load catalog data.', 'error');
@@ -299,6 +318,59 @@ export default function DashboardClient() {
     );
   };
 
+  const refreshProductOptions = async (type) => {
+    try {
+      const res = await fetch(`/api/admin/product-options?type=${type}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = data.options || [];
+      if (type === 'material') setMaterialOptions(list);
+      else setOrderTypeOptions(list);
+    } catch (err) {
+      console.error('Refresh product options:', err);
+    }
+  };
+
+  const addProductOption = async (type, name) => {
+    try {
+      const res = await fetch('/api/admin/product-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, name }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast('Added to list.', 'success');
+        await refreshProductOptions(type);
+        return data.option?.name || name;
+      }
+      toast(data.error || 'Failed to add option', 'error');
+      return null;
+    } catch {
+      toast('Failed to add option', 'error');
+      return null;
+    }
+  };
+
+  const deleteProductOption = async (type, option) => {
+    try {
+      const res = await fetch(`/api/admin/product-options?id=${option._id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast('Removed from list.', 'success');
+        await refreshProductOptions(type);
+        return true;
+      }
+      toast(data.error || 'Failed to delete option', 'error');
+      return false;
+    } catch {
+      toast('Failed to delete option', 'error');
+      return false;
+    }
+  };
+
   // Open Product Add Modal
   const openAddProductModal = () => {
     setEditingProduct(null);
@@ -307,6 +379,11 @@ export default function DashboardClient() {
     setProductCategory(categories[0]?.name || '');
     setProductRating(5);
     setProductDescription('');
+    setProductAvailabilityLabel('');
+    setProductMaterial('');
+    setProductOrderType('');
+    setProductSpecifications('');
+    setProductCustomisation('');
     setProductNote('Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
     setProductHighlights(['']);
     setProductImages([]);
@@ -326,6 +403,11 @@ export default function DashboardClient() {
     setProductCategory(product.category);
     setProductRating(product.rating || 5);
     setProductDescription(product.description);
+    setProductAvailabilityLabel(product.availabilityLabel || '');
+    setProductMaterial(product.material || '');
+    setProductOrderType(product.orderType || '');
+    setProductSpecifications(product.specifications || '');
+    setProductCustomisation(product.customisation || '');
     setProductNote(product.note || 'Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
     setProductHighlights(product.highlights?.length ? product.highlights : ['']);
     setProductImages(product.images || []);
@@ -465,6 +547,11 @@ export default function DashboardClient() {
       price: "",
       rating: Number(productRating),
       description: productDescription.trim(),
+      availabilityLabel: productAvailabilityLabel.trim(),
+      material: productMaterial.trim(),
+      orderType: productOrderType.trim(),
+      specifications: productSpecifications.trim(),
+      customisation: productCustomisation.trim(),
       note: productNote.trim(),
       highlights: productHighlights.filter((h) => h.trim() !== ''),
       hashtags: getAutoHashtags(productCategory, productTitle),
@@ -493,7 +580,18 @@ export default function DashboardClient() {
           ? 'Product updated successfully!'
           : 'Product added successfully!';
         toast(message, 'success');
-        fetchData();
+        if (data.product?._id) {
+          const saved = data.product;
+          const savedId = String(saved._id);
+          setProducts((prev) => {
+            const idx = prev.findIndex((p) => String(p._id) === savedId);
+            if (idx === -1) return [saved, ...prev];
+            const next = [...prev];
+            next[idx] = { ...next[idx], ...saved };
+            return next;
+          });
+        }
+        await fetchData();
         setIsProductModalOpen(false);
       } else {
         const message = data.error || 'Failed to save product';
@@ -1370,6 +1468,68 @@ export default function DashboardClient() {
                       placeholder="Describe the product and its target uses..."
                       className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 focus:ring-offset-1 text-sm bg-white resize-y min-h-[6.5rem]"
                     />
+                    <p className="mt-1 text-xs text-ag-ink/50">Shown in the summary and the Description tab on the product page.</p>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <ModalFieldLabel htmlFor="product-availability">Availability label</ModalFieldLabel>
+                      <input
+                        id="product-availability"
+                        type="text"
+                        value={productAvailabilityLabel}
+                        onChange={(e) => setProductAvailabilityLabel(e.target.value)}
+                        placeholder="e.g. Available for bulk orders"
+                        className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white"
+                      />
+                    </div>
+                    <ManageableOptionSelect
+                      id="product-material"
+                      label="Material"
+                      value={productMaterial}
+                      onChange={setProductMaterial}
+                      options={materialOptions}
+                      placeholder="Select material"
+                      addPlaceholder="New material name"
+                      onAdd={(name) => addProductOption('material', name)}
+                      onDelete={(opt) => deleteProductOption('material', opt)}
+                    />
+                    <ManageableOptionSelect
+                      id="product-order-type"
+                      label="Order type"
+                      value={productOrderType}
+                      onChange={setProductOrderType}
+                      options={orderTypeOptions}
+                      placeholder="Select order type"
+                      addPlaceholder="New order type"
+                      onAdd={(name) => addProductOption('orderType', name)}
+                      onDelete={(opt) => deleteProductOption('orderType', opt)}
+                    />
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div>
+                      <ModalFieldLabel htmlFor="product-specifications">Specifications tab</ModalFieldLabel>
+                      <textarea
+                        id="product-specifications"
+                        rows={3}
+                        value={productSpecifications}
+                        onChange={(e) => setProductSpecifications(e.target.value)}
+                        placeholder="Specs, dimensions, materials — shown in Specifications tab"
+                        className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white resize-y"
+                      />
+                    </div>
+                    <div>
+                      <ModalFieldLabel htmlFor="product-customisation">Customisation tab</ModalFieldLabel>
+                      <textarea
+                        id="product-customisation"
+                        rows={3}
+                        value={productCustomisation}
+                        onChange={(e) => setProductCustomisation(e.target.value)}
+                        placeholder="Printing options, branding — shown in Customisation tab"
+                        className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white resize-y"
+                      />
+                    </div>
                   </div>
                 </section>
 
