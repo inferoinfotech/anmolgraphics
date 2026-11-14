@@ -44,6 +44,8 @@ export async function PUT(req, { params }) {
       material,
       orderType,
       specifications,
+      specificationRows,
+      options,
       customisation,
     } = body;
 
@@ -101,6 +103,21 @@ export async function PUT(req, { params }) {
     }
     if (specifications !== undefined) {
       product.specifications = String(specifications).trim();
+    }
+    if (specificationRows !== undefined) {
+      product.specificationRows = Array.isArray(specificationRows)
+        ? specificationRows
+            .map((r) => ({
+              label: String(r?.label || '').trim(),
+              value: String(r?.value || '').trim(),
+            }))
+            .filter((r) => r.label && r.value)
+        : [];
+    }
+    if (options !== undefined) {
+      product.options = Array.isArray(options)
+        ? options.map((o) => String(o).trim()).filter(Boolean)
+        : [];
     }
     if (customisation !== undefined) {
       product.customisation = String(customisation).trim();

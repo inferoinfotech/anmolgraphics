@@ -57,6 +57,8 @@ export async function POST(req) {
       material,
       orderType,
       specifications,
+      specificationRows,
+      options,
       customisation,
     } = body;
 
@@ -99,6 +101,17 @@ export async function POST(req) {
       material: material?.trim() || '',
       orderType: orderType?.trim() || '',
       specifications: specifications?.trim() || '',
+      specificationRows: Array.isArray(specificationRows)
+        ? specificationRows
+            .map((r) => ({
+              label: String(r?.label || '').trim(),
+              value: String(r?.value || '').trim(),
+            }))
+            .filter((r) => r.label && r.value)
+        : [],
+      options: Array.isArray(options)
+        ? options.map((o) => String(o).trim()).filter(Boolean)
+        : [],
       customisation: customisation?.trim() || '',
     });
 

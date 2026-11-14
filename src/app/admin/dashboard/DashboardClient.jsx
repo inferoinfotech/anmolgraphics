@@ -4,6 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import TiptapEditor from '@/components/Admin/TiptapEditor';
 import ManageableOptionSelect from '@/components/Admin/ManageableOptionSelect';
+import ProductAvailableOptionsPicker from '@/components/Admin/ProductAvailableOptionsPicker';
+import ProductSpecificationForm from '@/components/Admin/ProductSpecificationForm';
+import {
+  buildSpecificationRows,
+  loadSpecFormState,
+  mergeSpecValuesForCategory,
+  specificationRowsToText,
+} from '@/components/ProductsPage/productSpecAdminHelpers';
 import { useAdminToaster } from '@/components/Admin/AdminToaster';
 import {
   adminBtnPrimary,
@@ -70,6 +78,7 @@ export default function DashboardClient() {
   const [categories, setCategories] = useState([]);
   const [materialOptions, setMaterialOptions] = useState([]);
   const [orderTypeOptions, setOrderTypeOptions] = useState([]);
+  const [availableOptionPool, setAvailableOptionPool] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Category Form State
@@ -92,7 +101,9 @@ export default function DashboardClient() {
   const [productAvailabilityLabel, setProductAvailabilityLabel] = useState('');
   const [productMaterial, setProductMaterial] = useState('');
   const [productOrderType, setProductOrderType] = useState('');
-  const [productSpecifications, setProductSpecifications] = useState('');
+  const [productSelectedOptions, setProductSelectedOptions] = useState([]);
+  const [productSpecValues, setProductSpecValues] = useState({});
+  const [productCustomSpecRows, setProductCustomSpecRows] = useState([]);
   const [productCustomisation, setProductCustomisation] = useState('');
   const [productNote, setProductNote] = useState('Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
   const [productHighlights, setProductHighlights] = useState(['']);
@@ -135,12 +146,14 @@ export default function DashboardClient() {
       const prodRes = await fetch('/api/admin/products');
       const matRes = await fetch('/api/admin/product-options?type=material');
       const orderRes = await fetch('/api/admin/product-options?type=orderType');
+      const availRes = await fetch('/api/admin/product-options?type=availableOption');
 
       if (
         catRes.status === 401 ||
         prodRes.status === 401 ||
         matRes.status === 401 ||
-        orderRes.status === 401
+        orderRes.status === 401 ||
+        availRes.status === 401
       ) {
         toast('Session expired. Please sign in again.', 'error');
         router.push('/admin/login');
@@ -151,11 +164,13 @@ export default function DashboardClient() {
       const prodData = await prodRes.json();
       const matData = matRes.ok ? await matRes.json() : { options: [] };
       const orderData = orderRes.ok ? await orderRes.json() : { options: [] };
+      const availData = availRes.ok ? await availRes.json() : { options: [] };
 
       setCategories(catData.categories || []);
       setProducts(prodData.products || []);
       setMaterialOptions(matData.options || []);
       setOrderTypeOptions(orderData.options || []);
+      setAvailableOptionPool(availData.options || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast('Failed to load catalog data.', 'error');
@@ -163,6 +178,11 @@ export default function DashboardClient() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isProductModalOpen) return;
+    setProductSpecValues((prev) => mergeSpecValuesForCategory(prev, productCategory));
+  }, [productCategory, isProductModalOpen]);
 
   useEffect(() => {
     fetchData();
@@ -325,7 +345,8 @@ export default function DashboardClient() {
       const data = await res.json();
       const list = data.options || [];
       if (type === 'material') setMaterialOptions(list);
-      else setOrderTypeOptions(list);
+      else if (type === 'orderType') setOrderTypeOptions(list);
+      else if (type === 'availableOption') setAvailableOptionPool(list);
     } catch (err) {
       console.error('Refresh product options:', err);
     }
@@ -373,16 +394,20 @@ export default function DashboardClient() {
 
   // Open Product Add Modal
   const openAddProductModal = () => {
+    const initialCategory = categories[0]?.name || '';
     setEditingProduct(null);
     setProductTitle('');
     setProductSlug('');
-    setProductCategory(categories[0]?.name || '');
+    setProductCategory(initialCategory);
     setProductRating(5);
     setProductDescription('');
     setProductAvailabilityLabel('');
     setProductMaterial('');
     setProductOrderType('');
-    setProductSpecifications('');
+    setProductSelectedOptions([]);
+    const specState = loadSpecFormState({ category: initialCategory });
+    setProductSpecValues(specState.values);
+    setProductCustomSpecRows(specState.customRows);
     setProductCustomisation('');
     setProductNote('Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
     setProductHighlights(['']);
@@ -406,7 +431,10 @@ export default function DashboardClient() {
     setProductAvailabilityLabel(product.availabilityLabel || '');
     setProductMaterial(product.material || '');
     setProductOrderType(product.orderType || '');
-    setProductSpecifications(product.specifications || '');
+    setProductSelectedOptions(Array.isArray(product.options) ? product.options : []);
+    const specState = loadSpecFormState(product);
+    setProductSpecValues(specState.values);
+    setProductCustomSpecRows(specState.customRows);
     setProductCustomisation(product.customisation || '');
     setProductNote(product.note || 'Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
     setProductHighlights(product.highlights?.length ? product.highlights : ['']);
@@ -540,6 +568,12 @@ export default function DashboardClient() {
 
     setSubmitting(true);
 
+    const specificationRows = buildSpecificationRows(
+      productSpecValues,
+      productCustomSpecRows,
+      productCategory
+    );
+
     const payload = {
       title: productTitle.trim(),
       slug: productSlug.trim(),
@@ -550,7 +584,9 @@ export default function DashboardClient() {
       availabilityLabel: productAvailabilityLabel.trim(),
       material: productMaterial.trim(),
       orderType: productOrderType.trim(),
-      specifications: productSpecifications.trim(),
+      specifications: specificationRowsToText(specificationRows),
+      specificationRows,
+      options: productSelectedOptions,
       customisation: productCustomisation.trim(),
       note: productNote.trim(),
       highlights: productHighlights.filter((h) => h.trim() !== ''),
@@ -1506,32 +1542,37 @@ export default function DashboardClient() {
                       onDelete={(opt) => deleteProductOption('orderType', opt)}
                     />
                   </div>
-
-                  <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    <div>
-                      <ModalFieldLabel htmlFor="product-specifications">Specifications tab</ModalFieldLabel>
-                      <textarea
-                        id="product-specifications"
-                        rows={3}
-                        value={productSpecifications}
-                        onChange={(e) => setProductSpecifications(e.target.value)}
-                        placeholder="Specs, dimensions, materials — shown in Specifications tab"
-                        className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white resize-y"
-                      />
-                    </div>
-                    <div>
-                      <ModalFieldLabel htmlFor="product-customisation">Customisation tab</ModalFieldLabel>
-                      <textarea
-                        id="product-customisation"
-                        rows={3}
-                        value={productCustomisation}
-                        onChange={(e) => setProductCustomisation(e.target.value)}
-                        placeholder="Printing options, branding — shown in Customisation tab"
-                        className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white resize-y"
-                      />
-                    </div>
-                  </div>
                 </section>
+
+                <div className="mt-4 space-y-4">
+                  <ProductAvailableOptionsPicker
+                    selected={productSelectedOptions}
+                    onSelectedChange={setProductSelectedOptions}
+                    poolOptions={availableOptionPool}
+                    onAddToPool={(name) => addProductOption('availableOption', name)}
+                    onDeleteFromPool={(opt) => deleteProductOption('availableOption', opt)}
+                  />
+
+                  <ProductSpecificationForm
+                    category={productCategory}
+                    values={productSpecValues}
+                    onValuesChange={setProductSpecValues}
+                    customRows={productCustomSpecRows}
+                    onCustomRowsChange={setProductCustomSpecRows}
+                  />
+
+                  <section className="rounded-xl border border-ag-border bg-white p-4 sm:p-5">
+                    <ModalFieldLabel htmlFor="product-customisation">Customisation tab</ModalFieldLabel>
+                    <textarea
+                      id="product-customisation"
+                      rows={3}
+                      value={productCustomisation}
+                      onChange={(e) => setProductCustomisation(e.target.value)}
+                      placeholder="One option per line — shown in Customisation tab"
+                      className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white resize-y"
+                    />
+                  </section>
+                </div>
 
                 {/* —— Highlights & note —— */}
                 <section className="rounded-xl border border-ag-border bg-white p-4 sm:p-5">

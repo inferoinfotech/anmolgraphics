@@ -67,6 +67,14 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  specificationRows: [{
+    label: { type: String, trim: true, default: '' },
+    value: { type: String, trim: true, default: '' },
+  }],
+  options: [{
+    type: String,
+    trim: true,
+  }],
   customisation: {
     type: String,
     default: '',

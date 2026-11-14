@@ -24,8 +24,14 @@
   --ag-text: #12293a;
   --ag-muted: #5b7283;
   --ag-border: #dce6ed;
+  --ag-row-border: #e5ecf1;
+  --ag-chip-border: #c9d6df;
+  --ag-blue-hover: #155a80;
+  --ag-olive-dark: #5e6b16;
   --ag-warm: #faeeda;
   --ag-warm-border: #e8d7b8;
+  --ag-warm-note-border: #ebd6ae;
+  --ag-warm-note-text: #633806;
   --ag-star-empty: #d9dee3;
 
   --background: #ffffff;

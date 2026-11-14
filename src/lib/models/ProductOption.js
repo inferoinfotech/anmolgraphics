@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const TYPES = ['material', 'orderType'];
+const TYPES = ['material', 'orderType', 'availableOption'];
 
 const ProductOptionSchema = new mongoose.Schema(
   {
@@ -22,5 +22,8 @@ ProductOptionSchema.index({ type: 1, name: 1 }, { unique: true });
 
 export const PRODUCT_OPTION_TYPES = TYPES;
 
-export default mongoose.models.ProductOption ||
-  mongoose.model('ProductOption', ProductOptionSchema);
+if (mongoose.models.ProductOption) {
+  delete mongoose.models.ProductOption;
+}
+
+export default mongoose.model('ProductOption', ProductOptionSchema);

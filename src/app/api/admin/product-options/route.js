@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 const DEFAULTS = {
   material: ['Metal and plastic', 'PVC', 'Polyester', 'Acrylic', 'Nylon'],
   orderType: ['Bulk and wholesale', 'Retail', 'Custom order', 'Sample order'],
+  availableOption: ['Silver', 'Black', 'Gold', 'Small', 'Large'],
 };
 
 async function ensureDefaults(type) {
@@ -29,7 +30,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');
 
-    if (!type || !['material', 'orderType'].includes(type)) {
+    if (!type || !['material', 'orderType', 'availableOption'].includes(type)) {
       return NextResponse.json(
         { error: 'Query type must be material or orderType' },
         { status: 400 }
@@ -55,7 +56,7 @@ export async function POST(req) {
     }
 
     const { type, name } = await req.json();
-    if (!type || !['material', 'orderType'].includes(type)) {
+    if (!type || !['material', 'orderType', 'availableOption'].includes(type)) {
       return NextResponse.json({ error: 'Invalid option type' }, { status: 400 });
     }
     if (!name || name.trim() === '') {
