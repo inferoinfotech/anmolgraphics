@@ -78,33 +78,39 @@ function ActionButtons({ product, className = "" }) {
     <div className={`space-y-2 ${className}`}>
       <Link
         href={inquiryHref}
-        className={`grid h-11 w-full grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg bg-[var(--ag-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[#155a80] ${FOCUS}`}
+        className={`flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--ag-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[#155a80] ${FOCUS}`}
       >
-        <IconSend size={18} stroke={1.75} aria-hidden className="justify-self-start" />
-        <span className="text-center">{STATIC.sendInquiry}</span>
-        <IconArrowRight size={18} stroke={1.75} aria-hidden className="justify-self-end" />
+        <IconSend size={18} stroke={1.75} aria-hidden className="shrink-0" />
+        <span>{STATIC.sendInquiry}</span>
+        <IconArrowRight size={18} stroke={1.75} aria-hidden className="shrink-0" />
       </Link>
       <div className="grid grid-cols-2 gap-2">
         <a
           href={waHref}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--ag-olive)] bg-white text-sm font-medium text-[#5e6b16] transition hover:bg-[var(--ag-mist)] ${FOCUS}`}
+          className={`flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--ag-olive)] bg-white px-2 text-sm font-medium text-[#5e6b16] transition hover:bg-[var(--ag-mist)] ${FOCUS}`}
         >
-          <IconBrandWhatsapp size={18} stroke={1.75} aria-hidden />
-          {STATIC.whatsApp}
+          <IconBrandWhatsapp size={18} stroke={1.75} aria-hidden className="shrink-0" />
+          <span className="truncate">{STATIC.whatsApp}</span>
         </a>
         <a
           href={`tel:${STATIC.phoneTel}`}
-          className={`group/call flex h-11 items-center justify-center gap-2 rounded-lg border border-[var(--ag-blue)] bg-white text-sm font-medium text-[var(--ag-blue)] transition hover:bg-[var(--ag-mist)] ${FOCUS}`}
+          title={STATIC.phoneDisplay}
+          className={`group/call flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--ag-blue)] bg-white px-1.5 text-sm font-medium text-[var(--ag-blue)] transition hover:bg-[var(--ag-mist)] sm:gap-2 sm:px-2 ${FOCUS}`}
         >
-          <IconPhone size={18} stroke={1.75} aria-hidden />
-          <span className="relative min-w-[6.5rem] text-center tabular-nums">
-            <span className="transition-opacity group-hover/call:opacity-0">{STATIC.callUs}</span>
+          <IconPhone size={18} stroke={1.75} aria-hidden className="shrink-0" />
+          <span className="grid min-w-0 place-items-center tabular-nums leading-none">
             <span
-              className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover/call:opacity-100"
+              className="col-start-1 row-start-1 select-none whitespace-nowrap text-[11px] opacity-0 sm:text-xs"
               aria-hidden
             >
+              {STATIC.phoneDisplay}
+            </span>
+            <span className="col-start-1 row-start-1 whitespace-nowrap text-xs transition-opacity group-hover/call:opacity-0 sm:text-sm">
+              {STATIC.callUs}
+            </span>
+            <span className="col-start-1 row-start-1 whitespace-nowrap text-[11px] opacity-0 transition-opacity group-hover/call:opacity-100 sm:text-xs">
               {STATIC.phoneDisplay}
             </span>
           </span>
