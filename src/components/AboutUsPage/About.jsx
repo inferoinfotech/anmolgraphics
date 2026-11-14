@@ -35,7 +35,7 @@ const About = () => {
       content: (
         <div>
           <p className="text-neutral-800 text-sm sm:text-base md:text-lg font-normal mb-4 sm:mb-6 md:mb-8">
-            "To provide top-quality identity solutions with precision, innovation, and trust. We strive to empower businesses, educational institutions, and organizations with premium ID card solutions that enhance security, professionalism, and brand identity. Our commitment to quality, customer satisfaction, and timely delivery drives everything we do."
+            &ldquo;To provide top-quality identity solutions with precision, innovation, and trust. We strive to empower businesses, educational institutions, and organizations with premium ID card solutions that enhance security, professionalism, and brand identity. Our commitment to quality, customer satisfaction, and timely delivery drives everything we do.&rdquo;
           </p>
         </div>
       ),
@@ -45,7 +45,7 @@ const About = () => {
       content: (
         <div>
           <p className="text-neutral-800 text-sm sm:text-base md:text-lg font-normal mb-4 sm:mb-6 md:mb-8">
-            "To become India’s leading provider of cutting-edge identity solutions, setting new benchmarks in quality, technology, and service. We envision expanding our reach across industries by integrating advanced printing technologies, smart card solutions, and sustainable practices—ensuring every client experiences the best in identity solutions."
+            &ldquo;To become India’s leading provider of cutting-edge identity solutions, setting new benchmarks in quality, technology, and service. We envision expanding our reach across industries by integrating advanced printing technologies, smart card solutions, and sustainable practices—ensuring every client experiences the best in identity solutions.&rdquo;
           </p>
         </div>
       ),

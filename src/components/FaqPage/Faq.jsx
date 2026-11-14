@@ -100,13 +100,13 @@ const Faq = () => {
         <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 
                      text-center font-bold leading-tight text-gray-900 
                      mb-3 sm:mb-4 md:mb-5">
-          We're Here to Help
+          We&apos;re Here to Help
         </h1>
         <p className="text-center text-base sm:text-lg font-medium 
                      max-w-[90%] sm:max-w-2xl mx-auto text-gray-600 
                      px-4 sm:px-6">
-          "Find quick answers to common questions. If you don't see what you're looking for,
-          feel free to contact us!"
+          &ldquo;Find quick answers to common questions. If you don&apos;t see what you&apos;re looking for,
+          feel free to contact us!&rdquo;
         </p>
       </div>
 

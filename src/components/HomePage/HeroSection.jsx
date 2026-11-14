@@ -12,7 +12,7 @@ const HeroSection = () => {
                 <section className="py-16">
                     <div className="px-4 mx-auto sm:px-6 lg:px-8">
                         <div className="max-w-2xl mx-auto text-center">
-                            <h1 className="px-6 text-md md:text-lg text-gray-600 font-inter">"Trusted Identity Card Manufacturer for Businesses & Schools"</h1>
+                            <h1 className="px-6 text-md md:text-lg text-gray-600 font-inter">&ldquo;Trusted Identity Card Manufacturer for Businesses &amp; Schools&rdquo;</h1>
                             <div className="mt-5 text-2xl font-bold leading-tight text-[#0E3A56] sm:leading-tight sm:text-5xl lg:text-6xl lg:leading-tight font-pj">
                                 We Manufacture High-Quality
                                 <span className="relative inline-flex sm:inline">
