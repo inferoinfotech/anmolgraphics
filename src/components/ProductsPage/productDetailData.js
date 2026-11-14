@@ -90,7 +90,13 @@ export function normalizeSpecRows(product) {
 
 export function normalizeCustomisationItems(product) {
   const raw = product.customisationItems ?? product.customisation;
-  return normalizeStringList(raw);
+  const list = normalizeStringList(raw);
+  const seen = new Set();
+  return list.filter((item) => {
+    if (seen.has(item)) return false;
+    seen.add(item);
+    return true;
+  });
 }
 
 /** @returns {ProductFaq[]} */
@@ -110,6 +116,16 @@ export function normalizeHighlights(product) {
 
 export function normalizeOptions(product) {
   return normalizeStringList(product.options);
+}
+
+export function normalizeIdealFor(product) {
+  return normalizeStringList(product.idealFor);
+}
+
+export function getProductDeliveryInfo(product) {
+  const dispatchTimeline = String(product.dispatchTimeline ?? "").trim();
+  const bulkOrderTimeline = String(product.bulkOrderTimeline ?? "").trim();
+  return { dispatchTimeline, bulkOrderTimeline };
 }
 
 export function parseVideoEmbed(url) {

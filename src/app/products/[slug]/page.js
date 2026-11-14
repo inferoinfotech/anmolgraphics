@@ -55,8 +55,8 @@ export default async function ProductDetail({ params }) {
     return (
         <>
             <StructuredData product={product} />
-            <div className="bg-[var(--ag-page-bg)] pb-24 md:pb-8">
-                <div className="site-container py-4 sm:py-6">
+            <div className="bg-[var(--ag-page-bg)] pb-[4.5rem] md:pb-6">
+                <div className="site-container py-4 pb-4 sm:py-6 sm:pb-6">
                     <ProductDetailPage product={product} relatedProducts={relatedProducts} />
                 </div>
             </div>

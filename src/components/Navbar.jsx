@@ -60,7 +60,7 @@ const Navbar = () => {
                     </div>
 
                     {/* Right Section - Black Box */}
-                    <div className="bg-black text-white px-4 py-3 rounded-r-lg flex items-center justify-center cursor-pointer">
+                    <div className="bg-[#0E3A56] text-white px-4 py-3 rounded-r-lg flex items-center justify-center cursor-pointer transition-colors hover:bg-[#0a3048]">
                         <Link href="/contact">
                             <LayoutGrid className="w-5 h-5" />
                         </Link>

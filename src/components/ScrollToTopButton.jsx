@@ -2,15 +2,22 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
+function isScrollToTopHidden(pathname) {
+  if (!pathname) return false;
+  if (pathname.startsWith("/admin")) return true;
+  if (pathname.startsWith("/products/") && pathname.length > "/products/".length) {
+    return true;
+  }
+  return false;
+}
+
 export default function ScrollToTopButton() {
   const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
-
-  if (pathname && pathname.startsWith("/admin")) {
-    return null;
-  }
+  const hidden = isScrollToTopHidden(pathname);
 
   useEffect(() => {
+    if (hidden) return undefined;
     const toggleVisibility = () => {
       if (window.scrollY > 300) {
         setIsVisible(true);
@@ -21,11 +28,13 @@ export default function ScrollToTopButton() {
 
     window.addEventListener("scroll", toggleVisibility);
     return () => window.removeEventListener("scroll", toggleVisibility);
-  }, []);
+  }, [hidden]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  if (hidden) return null;
 
   return (
     <>

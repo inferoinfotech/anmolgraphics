@@ -6,8 +6,16 @@ import Link from "next/link";
 import {
   IconArrowRight,
   IconBrandWhatsapp,
+  IconCheck,
   IconChevronDown,
   IconCircleCheck,
+  IconClock,
+  IconMinus,
+  IconPackages,
+  IconReceiptTax,
+  IconShieldCheck,
+  IconTruckDelivery,
+  IconPlus,
   IconDownload,
   IconFileTypePdf,
   IconInfoCircle,
@@ -23,9 +31,11 @@ import {
   getProductSheetUrl,
   getVideoUrl,
   hasContent,
+  getProductDeliveryInfo,
   normalizeCustomisationItems,
   normalizeFaqs,
   normalizeHighlights,
+  normalizeIdealFor,
   normalizeOptions,
   normalizeSpecRows,
   parseVideoEmbed,
@@ -33,6 +43,64 @@ import {
 
 const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--ag-blue)] focus-visible:outline-offset-2";
+
+
+function toSentenceCase(value) {
+  const s = String(value).trim();
+  if (!s) return s;
+  const lower = s.toLowerCase();
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function ProductHighlights({ highlights, headingId }) {
+  if (!highlights.length) return null;
+  return (
+    <section aria-labelledby={headingId}>
+      <h2 id={headingId} className="mb-2 text-base font-medium text-[var(--ag-ocean)]">
+        Highlights
+      </h2>
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {highlights.map((text) => (
+          <li
+            key={text}
+            className="flex items-start gap-2 rounded-lg border border-[var(--ag-border)] bg-white px-2.5 py-2 text-sm text-[var(--ag-text)]"
+          >
+            <IconCircleCheck
+              className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--ag-olive)]"
+              stroke={1.75}
+              aria-hidden
+            />
+            <span>{text}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function ProductAvailableOptions({ options, headingId, withTopRule = false }) {
+  if (!options.length) return null;
+  return (
+    <section
+      aria-labelledby={headingId}
+      className={withTopRule ? "border-t border-[var(--ag-row-border)] pt-4" : undefined}
+    >
+      <p id={headingId} className="mb-2 text-sm text-[var(--ag-muted)]">
+        {STATIC.availableOptionsLabel}
+      </p>
+      <ul className="flex flex-wrap gap-2">
+        {options.map((opt) => (
+          <li
+            key={opt}
+            className="rounded-full border border-[var(--ag-chip-border)] bg-white px-3 py-1 text-xs text-[var(--ag-text)]"
+          >
+            {toSentenceCase(opt)}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
 function StarRating({ rating }) {
   const r = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
@@ -82,6 +150,94 @@ function ProductBreadcrumb({ product }) {
   );
 }
 
+const TRUST_STRIP_ICONS = {
+  gst: IconReceiptTax,
+  bulk: IconPackages,
+  delivery: IconTruckDelivery,
+  quality: IconShieldCheck,
+};
+
+function ProductTrustStrip() {
+  return (
+    <div
+      className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5"
+      role="list"
+      aria-label="Purchase assurances"
+    >
+      {STATIC.trustStrip.map((item) => {
+        const Icon = TRUST_STRIP_ICONS[item.id] || IconShieldCheck;
+        return (
+          <div
+            key={item.id}
+            role="listitem"
+            className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-[var(--ag-border)] bg-[var(--ag-page-bg)] px-2 py-2.5 text-center"
+          >
+            <Icon
+              size={20}
+              stroke={1.75}
+              className="shrink-0 text-[var(--ag-blue)]"
+              aria-hidden
+            />
+            <span className="text-[11px] font-medium leading-tight text-[var(--ag-text)] sm:text-xs">
+              {item.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ProductIdealForChips({ items }) {
+  if (!items.length) return null;
+  return (
+    <div className="mt-4">
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--ag-muted)]">
+        {STATIC.idealForHeading}
+      </p>
+      <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label={STATIC.idealForHeading}>
+        {items.map((label) => (
+          <li key={label}>
+            <span className="inline-flex rounded-full border border-[var(--ag-chip-border)] bg-white px-3 py-1 text-xs font-medium text-[var(--ag-ocean)] sm:text-[13px]">
+              {label}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ProductDeliveryTurnaround({ dispatchTimeline, bulkOrderTimeline }) {
+  const lines = [
+    dispatchTimeline ? { key: "dispatch", text: dispatchTimeline, Icon: IconTruckDelivery } : null,
+    bulkOrderTimeline
+      ? { key: "bulk", text: bulkOrderTimeline, Icon: IconClock }
+      : null,
+  ].filter(Boolean);
+
+  if (!lines.length) return null;
+
+  return (
+    <div className="mt-4 rounded-[10px] border border-[var(--ag-faq-open-border)] bg-[var(--ag-mist)] px-3.5 py-3">
+      <p className="mb-2 text-xs font-medium text-[var(--ag-ocean)]">{STATIC.deliveryHeading}</p>
+      <ul className="m-0 list-none space-y-2 p-0">
+        {lines.map(({ key, text, Icon }) => (
+          <li key={key} className="flex items-start gap-2.5 text-sm leading-snug text-[var(--ag-text)]">
+            <Icon
+              size={18}
+              stroke={1.75}
+              className="mt-0.5 shrink-0 text-[var(--ag-blue)]"
+              aria-hidden
+            />
+            <span className="min-w-0 flex-1">{text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ActionButtons({ product, className = "" }) {
   const inquiryHref = `/contact?product=${encodeURIComponent(product.slug)}`;
   const waText = encodeURIComponent(
@@ -112,23 +268,10 @@ function ActionButtons({ product, className = "" }) {
         <a
           href={`tel:${STATIC.phoneTel}`}
           title={STATIC.phoneDisplay}
-          className={`group/call flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--ag-blue)] bg-white px-1.5 text-sm font-medium text-[var(--ag-blue)] transition hover:bg-[var(--ag-mist)] sm:gap-2 sm:px-2 ${FOCUS}`}
+          className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-[var(--ag-blue)] bg-white px-2 text-sm font-medium text-[var(--ag-blue)] transition hover:bg-[var(--ag-mist)] ${FOCUS}`}
         >
           <IconPhone size={18} stroke={1.75} aria-hidden className="shrink-0" />
-          <span className="grid min-w-0 place-items-center tabular-nums leading-none">
-            <span
-              className="col-start-1 row-start-1 select-none whitespace-nowrap text-[11px] opacity-0 sm:text-xs"
-              aria-hidden
-            >
-              {STATIC.phoneDisplay}
-            </span>
-            <span className="col-start-1 row-start-1 whitespace-nowrap text-xs transition-opacity group-hover/call:opacity-0 sm:text-sm">
-              {STATIC.callUs}
-            </span>
-            <span className="col-start-1 row-start-1 whitespace-nowrap text-[11px] opacity-0 transition-opacity group-hover/call:opacity-100 sm:text-xs">
-              {STATIC.phoneDisplay}
-            </span>
-          </span>
+          <span>{STATIC.callUs}</span>
         </a>
       </div>
     </div>
@@ -210,45 +353,220 @@ function VideoModal({ open, onClose, embed }) {
   );
 }
 
-function FaqAccordion({ faqs }) {
+function faqIdFromSlug(slug) {
+  return String(slug || "product").replace(/[^a-zA-Z0-9-]/g, "-");
+}
+
+function FaqAccordion({ faqs, productSlug, isTabActive }) {
   const [openIndex, setOpenIndex] = useState(0);
+  const idBase = faqIdFromSlug(productSlug);
+
+  useEffect(() => {
+    if (isTabActive) setOpenIndex(0);
+  }, [isTabActive]);
 
   return (
-    <div className="divide-y divide-[var(--ag-row-border)]">
+    <div className="space-y-2">
       {faqs.map((faq, index) => {
         const expanded = openIndex === index;
+        const btnId = `faq-btn-${idBase}-${index}`;
+        const panelId = `faq-${idBase}-${index}`;
+
         return (
-          <div key={faq.question} className="py-1">
+          <article
+            key={`${faq.question}-${index}`}
+            className={`mb-2 overflow-hidden rounded-[10px] border bg-white transition-[border-color,background-color] duration-150 motion-reduce:transition-none last:mb-0 ${
+              expanded
+                ? "border-[var(--ag-faq-open-border)] bg-[var(--ag-faq-open-bg)]"
+                : "border-[var(--ag-border)]"
+            }`}
+            style={expanded ? { boxShadow: "inset 3px 0 0 var(--ag-gold)" } : undefined}
+          >
             <button
               type="button"
-              id={`faq-btn-${index}`}
+              id={btnId}
               aria-expanded={expanded}
-              aria-controls={`faq-panel-${index}`}
+              aria-controls={panelId}
               onClick={() => setOpenIndex(expanded ? -1 : index)}
-              className={`flex w-full min-h-[44px] items-center justify-between gap-3 py-3 text-left text-[15px] font-medium text-[var(--ag-ocean)] ${FOCUS} rounded`}
+              className={`flex min-h-[44px] w-full items-center justify-between gap-3 px-[14px] py-[13px] text-left transition-colors duration-150 motion-reduce:transition-none ${
+                expanded ? "" : "hover:bg-[rgba(27,110,156,0.04)]"
+              } ${FOCUS}`}
             >
-              <span>{faq.question}</span>
-              <IconChevronDown
-                size={18}
-                stroke={1.75}
-                className={`shrink-0 text-[var(--ag-muted)] transition-transform ${
-                  expanded ? "rotate-180" : ""
+              <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-[var(--ag-ocean)]">
+                {faq.question}
+              </span>
+              <span
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full motion-reduce:transition-none transition-[background-color,color,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                  expanded
+                    ? "scale-100 bg-[var(--ag-blue)] text-white"
+                    : "scale-100 bg-[var(--ag-faq-icon-bg)] text-[var(--ag-muted)]"
                 }`}
                 aria-hidden
-              />
+              >
+                {expanded ? (
+                  <IconMinus size={14} stroke={2.25} />
+                ) : (
+                  <IconPlus size={14} stroke={2.25} />
+                )}
+              </span>
             </button>
             <div
-              id={`faq-panel-${index}`}
+              id={panelId}
               role="region"
-              aria-labelledby={`faq-btn-${index}`}
-              hidden={!expanded}
-              className="pb-3 text-[15px] leading-relaxed text-[var(--ag-muted)]"
+              aria-labelledby={btnId}
+              aria-hidden={!expanded}
+              className={`grid motion-reduce:transition-none transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
             >
-              <p className="whitespace-pre-line">{faq.answer}</p>
+              <div className="min-h-0 overflow-hidden">
+                <p
+                  className={`whitespace-pre-line px-[14px] pb-3 pt-0 text-sm leading-[1.65] text-[var(--ag-muted)] motion-reduce:transition-none transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                    expanded
+                      ? "translate-y-0 opacity-100"
+                      : "-translate-y-1 opacity-0 pointer-events-none"
+                  }`}
+                >
+                  {faq.answer}
+                </p>
+              </div>
             </div>
-          </div>
+          </article>
         );
       })}
+    </div>
+  );
+}
+
+const CUSTOMISATION_COLLAPSED_COUNT = 6;
+const CUSTOMISATION_EXPAND_THRESHOLD = 8;
+
+function CustomisationTabPanel({ items, product }) {
+  const [showAll, setShowAll] = useState(false);
+  const needsToggle = items.length > CUSTOMISATION_EXPAND_THRESHOLD;
+  const visibleItems =
+    needsToggle && !showAll ? items.slice(0, CUSTOMISATION_COLLAPSED_COUNT) : items;
+
+  const inquiryHref = `/contact?product=${encodeURIComponent(product.slug)}`;
+  const waText = encodeURIComponent(
+    `${STATIC.customisationWhatsAppMessagePrefix} ${product.title}.`
+  );
+  const waHref = `https://wa.me/${STATIC.whatsAppNumber}?text=${waText}`;
+
+  return (
+    <>
+      <div>
+        <h3 className="m-0 mb-0.5 text-sm font-medium text-[var(--ag-ocean)] sm:text-base">
+          {STATIC.customisationHeading}
+        </h3>
+        <p className="mb-2 text-sm text-[var(--ag-muted)]">{STATIC.customisationSubtext}</p>
+      </div>
+
+      <ul className="m-0 list-none p-0">
+        {visibleItems.map((item, index) => (
+          <li
+            key={`${item}-${index}`}
+            className={`flex items-start gap-[10px] py-2.5 text-sm leading-normal text-[var(--ag-text)] sm:text-[15px] sm:leading-[1.5] ${
+              index > 0 ? "border-t border-[var(--ag-row-border)]" : ""
+            }`}
+          >
+            <span
+              className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--ag-check-circle-bg)] text-[var(--ag-olive-dark)]"
+              aria-hidden
+            >
+              <IconCheck size={13} stroke={2.25} />
+            </span>
+            <span className="min-w-0 flex-1">{item}</span>
+          </li>
+        ))}
+      </ul>
+
+      {needsToggle ? (
+        <button
+          type="button"
+          onClick={() => setShowAll((prev) => !prev)}
+          aria-expanded={showAll}
+          className={`mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded text-sm font-medium text-[var(--ag-blue)] transition hover:text-[var(--ag-blue-hover)] ${FOCUS}`}
+        >
+          {showAll
+            ? STATIC.customisationShowLess
+            : `${STATIC.customisationShowAll} (${items.length})`}
+          <IconChevronDown
+            size={16}
+            stroke={2}
+            aria-hidden
+            className={`shrink-0 transition-transform duration-200 motion-reduce:transition-none ${
+              showAll ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      ) : null}
+
+      <div className="mt-3.5 flex flex-col gap-3 rounded-[10px] border border-[var(--ag-faq-open-border)] bg-[var(--ag-mist)] px-[14px] py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-[var(--ag-ocean)]">
+            {STATIC.customisationHelpTitle}
+          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-[var(--ag-muted)] sm:text-[13px]">
+            {STATIC.customisationHelpSubtext}
+          </p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[min(100%,280px)] sm:flex-row">
+          <Link
+            href={inquiryHref}
+            className={`inline-flex h-10 min-h-[44px] w-full flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--ag-blue)] px-3 text-sm font-semibold text-white transition hover:bg-[var(--ag-blue-hover)] sm:flex-initial sm:w-auto sm:px-4 ${FOCUS}`}
+          >
+            <IconSend size={18} stroke={1.75} aria-hidden />
+            {STATIC.sendInquiry}
+          </Link>
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex h-10 min-h-[44px] w-full flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--ag-olive)] bg-white px-3 text-sm font-medium text-[var(--ag-olive-dark)] transition hover:bg-white sm:flex-initial sm:w-auto sm:px-4 ${FOCUS}`}
+          >
+            <IconBrandWhatsapp size={18} stroke={1.75} aria-hidden />
+            {STATIC.whatsApp}
+          </a>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function FaqStillHaveQuestion({ product }) {
+  const inquiryHref = `/contact?product=${encodeURIComponent(product.slug)}`;
+  const waText = encodeURIComponent(
+    `${STATIC.faqWhatsAppMessagePrefix} ${product.title}.`
+  );
+  const waHref = `https://wa.me/${STATIC.whatsAppNumber}?text=${waText}`;
+
+  return (
+    <div className="mt-3.5 flex flex-col gap-3 rounded-[10px] border border-[var(--ag-faq-open-border)] bg-[var(--ag-mist)] px-[14px] py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-[var(--ag-ocean)]">{STATIC.faqHelpTitle}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-[var(--ag-muted)] sm:text-[13px]">
+          {STATIC.faqHelpSubtext}
+        </p>
+      </div>
+      <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[min(100%,280px)] sm:flex-row">
+        <Link
+          href={inquiryHref}
+          className={`inline-flex h-10 min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--ag-blue)] px-3 text-sm font-semibold text-white transition hover:bg-[var(--ag-blue-hover)] sm:flex-initial sm:px-4 ${FOCUS}`}
+        >
+          <IconSend size={18} stroke={1.75} aria-hidden />
+          {STATIC.sendInquiry}
+        </Link>
+        <a
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex h-10 min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--ag-olive)] bg-white px-3 text-sm font-medium text-[var(--ag-olive-dark)] transition hover:bg-white sm:flex-initial sm:px-4 ${FOCUS}`}
+        >
+          <IconBrandWhatsapp size={18} stroke={1.75} aria-hidden />
+          {STATIC.whatsApp}
+        </a>
+      </div>
     </div>
   );
 }
@@ -295,9 +613,10 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
   const showThumbs = images.length > 1;
 
   const pillStyle = getCategoryPillStyle(product.category);
-  const availability = hasContent(product.availabilityLabel)
+  const availabilityRaw = hasContent(product.availabilityLabel)
     ? product.availabilityLabel.trim()
     : STATIC.availabilityLabel;
+  const availability = availabilityRaw.replace(/\bavaiable\b/gi, "available");
   const materialValue = hasContent(product.material)
     ? product.material.trim()
     : STATIC.materialDefault;
@@ -310,6 +629,8 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
   const options = useMemo(() => normalizeOptions(product), [product]);
   const specRows = useMemo(() => normalizeSpecRows(product), [product]);
   const customItems = useMemo(() => normalizeCustomisationItems(product), [product]);
+  const idealFor = useMemo(() => normalizeIdealFor(product), [product]);
+  const deliveryInfo = useMemo(() => getProductDeliveryInfo(product), [product]);
   const faqs = useMemo(() => normalizeFaqs(product), [product]);
   const sheetUrl = useMemo(() => getProductSheetUrl(product), [product]);
   const videoEmbed = useMemo(() => {
@@ -352,6 +673,8 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
 
   if (!product) return <div>Product not found</div>;
 
+  const showLeftHighlights = highlights.length > 0;
+
   const inquiryHref = `/contact?product=${encodeURIComponent(product.slug)}`;
   const waText = encodeURIComponent(
     `${STATIC.whatsAppMessagePrefix} ${product.title}.`
@@ -363,10 +686,13 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
       <ProductFaqJsonLd faqs={faqs} />
       <ProductBreadcrumb product={product} />
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
-        <div>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-8">
+        <div
+          className="flex flex-col gap-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain"
+          style={{ scrollbarGutter: "stable" }}
+        >
           <div
-            className="flex h-[min(440px,55vw)] min-h-[280px] items-center justify-center rounded-xl border border-[var(--ag-warm-border)] bg-[var(--ag-warm)] p-4 sm:h-[400px] lg:h-[400px] lg:min-h-[380px]"
+            className="flex h-[min(440px,55vw)] min-h-[280px] items-center justify-center rounded-xl border border-[var(--ag-border)] bg-white p-4 sm:h-[400px] lg:h-[400px] lg:min-h-[380px]"
           >
             <Image
               src={mainImage}
@@ -378,7 +704,7 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
             />
           </div>
           {showThumbs ? (
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+            <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
               {thumbnails.map((img, index) => {
                 const selected = mainImage === img;
                 return (
@@ -411,7 +737,7 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
             <button
               type="button"
               onClick={() => setVideoOpen(true)}
-              className={`mt-4 flex w-full items-center gap-3 rounded-xl border border-[var(--ag-border)] bg-white p-3 text-left transition hover:bg-[var(--ag-mist)] ${FOCUS}`}
+              className={`flex w-full items-center gap-3 rounded-xl border border-[var(--ag-border)] bg-white p-3 text-left transition hover:bg-[var(--ag-mist)] ${FOCUS}`}
             >
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-[var(--ag-ocean)] text-white">
                 <IconPlayerPlay size={26} stroke={1.75} aria-hidden />
@@ -426,12 +752,18 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
               </span>
             </button>
           ) : null}
+
+          {showLeftHighlights ? (
+            <div className="hidden flex-col gap-4 lg:flex">
+              <ProductHighlights highlights={highlights} headingId="product-highlights-desktop" />
+            </div>
+          ) : null}
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-4 lg:self-start">
           {product.category ? (
             <span
-              className="mb-3 inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium"
+              className="inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium"
               style={{
                 backgroundColor: pillStyle.bg,
                 border: `1px solid ${pillStyle.border}`,
@@ -446,69 +778,53 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
             {product.title}
           </h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <StarRating rating={product.rating} />
             <span className="text-sm text-[var(--ag-muted)]">{availability}</span>
           </div>
 
           {hasContent(product.description) ? (
-            <p className="mt-4 text-[15px] leading-relaxed text-[var(--ag-muted)] sm:text-base sm:leading-[1.6]">
+            <p className="text-[15px] leading-relaxed text-[var(--ag-muted)] sm:text-base sm:leading-[1.6]">
               {product.description}
             </p>
           ) : null}
 
-          {highlights.length > 0 ? (
-            <ul className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {highlights.map((text) => (
-                <li
-                  key={text}
-                  className="flex items-start gap-2 rounded-lg border border-[var(--ag-border)] bg-white px-2.5 py-2 text-sm text-[var(--ag-text)]"
-                >
-                  <IconCircleCheck
-                    className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[var(--ag-olive)]"
-                    stroke={1.75}
-                    aria-hidden
-                  />
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {options.length > 0 ? (
-            <div className="mt-5">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--ag-muted)]">
-                {STATIC.availableOptionsLabel}
-              </p>
-              <ul className="flex flex-wrap gap-2">
-                {options.map((opt) => (
-                  <li
-                    key={opt}
-                    className="rounded-full border border-[var(--ag-chip-border)] bg-white px-3 py-1 text-xs text-[var(--ag-text)]"
-                  >
-                    {opt}
-                  </li>
-                ))}
-              </ul>
+          {showLeftHighlights ? (
+            <div className="lg:hidden">
+              <ProductHighlights highlights={highlights} headingId="product-highlights-mobile" />
             </div>
           ) : null}
 
-          <dl className="mt-6 w-full text-sm">
-            <div className="flex justify-between gap-4 border-t border-[var(--ag-row-border)] py-3">
-              <dt className="text-[var(--ag-muted)]">{STATIC.detailLabels.category}</dt>
-              <dd className="font-medium text-[var(--ag-text)]">{product.category || "—"}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-[var(--ag-row-border)] py-3">
-              <dt className="text-[var(--ag-muted)]">{STATIC.detailLabels.material}</dt>
-              <dd className="font-medium text-[var(--ag-text)]">{materialValue}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-t border-[var(--ag-row-border)] py-3">
-              <dt className="text-[var(--ag-muted)]">{STATIC.detailLabels.orderType}</dt>
-              <dd className="font-medium text-[var(--ag-text)]">{orderTypeValue}</dd>
-            </div>
-          </dl>
+          <div className="flex flex-col gap-3">
+            <ProductAvailableOptions
+              options={options}
+              headingId="product-options"
+              withTopRule={false}
+            />
 
-          <ActionButtons product={product} className="mt-6 max-md:hidden" />
+            <dl className="w-full text-sm leading-[1.25]">
+              <div className="flex items-start justify-between gap-4 border-t border-[var(--ag-row-border)] py-2.5">
+                <dt className="text-[var(--ag-muted)]">{STATIC.detailLabels.category}</dt>
+                <dd className="font-medium text-[var(--ag-text)]">{product.category || "—"}</dd>
+              </div>
+              <div className="flex items-start justify-between gap-4 border-t border-[var(--ag-row-border)] py-2.5">
+                <dt className="text-[var(--ag-muted)]">{STATIC.detailLabels.material}</dt>
+                <dd className="font-medium text-[var(--ag-text)]">{materialValue}</dd>
+              </div>
+              <div className="flex items-start justify-between gap-4 border-t border-[var(--ag-row-border)] py-2.5">
+                <dt className="text-[var(--ag-muted)]">{STATIC.detailLabels.orderType}</dt>
+                <dd className="font-medium text-[var(--ag-text)]">{orderTypeValue}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <ActionButtons product={product} className="max-md:hidden" />
+          <ProductTrustStrip />
+          <ProductIdealForChips items={idealFor} />
+          <ProductDeliveryTurnaround
+            dispatchTimeline={deliveryInfo.dispatchTimeline}
+            bulkOrderTimeline={deliveryInfo.bulkOrderTimeline}
+          />
         </div>
       </div>
 
@@ -615,18 +931,7 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
             className="pt-4"
           >
             {activeTab === "customisation" ? (
-              <ul className="space-y-2 text-[15px] text-[var(--ag-muted)]">
-                {customItems.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <IconCircleCheck
-                      className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ag-olive)]"
-                      stroke={1.75}
-                      aria-hidden
-                    />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <CustomisationTabPanel items={customItems} product={product} />
             ) : null}
           </div>
         ) : null}
@@ -639,7 +944,16 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
             hidden={activeTab !== "faqs"}
             className="pt-2"
           >
-            {activeTab === "faqs" ? <FaqAccordion faqs={faqs} /> : null}
+            {activeTab === "faqs" ? (
+              <>
+                <FaqAccordion
+                  faqs={faqs}
+                  productSlug={product.slug}
+                  isTabActive={activeTab === "faqs"}
+                />
+                <FaqStillHaveQuestion product={product} />
+              </>
+            ) : null}
           </div>
         ) : null}
 
@@ -672,7 +986,7 @@ export default function ProductDetailPage({ product, relatedProducts = [] }) {
       </div>
 
       {relatedProducts.length > 0 ? (
-        <section className="mt-10 md:mt-12">
+        <section className="mt-8 md:mt-10">
           <h2 className="text-xl font-medium text-[var(--ag-ocean)]">{STATIC.relatedHeading}</h2>
           <div className="-mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {relatedProducts.map((p) => (

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import TiptapEditor from '@/components/Admin/TiptapEditor';
 import ManageableOptionSelect from '@/components/Admin/ManageableOptionSelect';
 import ProductAvailableOptionsPicker from '@/components/Admin/ProductAvailableOptionsPicker';
+import ProductIdealForPicker from '@/components/Admin/ProductIdealForPicker';
 import ProductSpecificationForm from '@/components/Admin/ProductSpecificationForm';
 import {
   buildSpecificationRows,
@@ -105,8 +106,12 @@ export default function DashboardClient() {
   const [productSpecValues, setProductSpecValues] = useState({});
   const [productCustomSpecRows, setProductCustomSpecRows] = useState([]);
   const [productCustomisation, setProductCustomisation] = useState('');
+  const [productIdealFor, setProductIdealFor] = useState([]);
+  const [productDispatchTimeline, setProductDispatchTimeline] = useState('');
+  const [productBulkOrderTimeline, setProductBulkOrderTimeline] = useState('');
   const [productNote, setProductNote] = useState('Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
   const [productHighlights, setProductHighlights] = useState(['']);
+  const [productFaqs, setProductFaqs] = useState([{ question: '', answer: '' }]);
   const [productImages, setProductImages] = useState([]); // array of urls
   const [productThumbnail, setProductThumbnail] = useState(''); // url
   const [productSections, setProductSections] = useState([]); // array of sections
@@ -409,8 +414,12 @@ export default function DashboardClient() {
     setProductSpecValues(specState.values);
     setProductCustomSpecRows(specState.customRows);
     setProductCustomisation('');
+    setProductIdealFor([]);
+    setProductDispatchTimeline('');
+    setProductBulkOrderTimeline('');
     setProductNote('Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
     setProductHighlights(['']);
+    setProductFaqs([{ question: '', answer: '' }]);
     setProductImages([]);
     setProductThumbnail('');
     setProductSections([]);
@@ -436,8 +445,19 @@ export default function DashboardClient() {
     setProductSpecValues(specState.values);
     setProductCustomSpecRows(specState.customRows);
     setProductCustomisation(product.customisation || '');
+    setProductIdealFor(Array.isArray(product.idealFor) ? product.idealFor : []);
+    setProductDispatchTimeline(product.dispatchTimeline || '');
+    setProductBulkOrderTimeline(product.bulkOrderTimeline || '');
     setProductNote(product.note || 'Prices may vary based on purchase quantity and any customizations. An 18% GST charge will apply.');
     setProductHighlights(product.highlights?.length ? product.highlights : ['']);
+    setProductFaqs(
+      product.faqs?.length
+        ? product.faqs.map((f) => ({
+            question: f.question || '',
+            answer: f.answer || '',
+          }))
+        : [{ question: '', answer: '' }]
+    );
     setProductImages(product.images || []);
     setProductThumbnail(product.thumbnail || '');
     setProductSections(product.sections || []);
@@ -588,8 +608,17 @@ export default function DashboardClient() {
       specificationRows,
       options: productSelectedOptions,
       customisation: productCustomisation.trim(),
+      idealFor: productIdealFor,
+      dispatchTimeline: productDispatchTimeline.trim(),
+      bulkOrderTimeline: productBulkOrderTimeline.trim(),
       note: productNote.trim(),
       highlights: productHighlights.filter((h) => h.trim() !== ''),
+      faqs: productFaqs
+        .map((f) => ({
+          question: f.question.trim(),
+          answer: f.answer.trim(),
+        }))
+        .filter((f) => f.question && f.answer),
       hashtags: getAutoHashtags(productCategory, productTitle),
       images: productImages,
       thumbnail: productThumbnail || productImages[0] || '/placeholder.svg',
@@ -658,6 +687,22 @@ export default function DashboardClient() {
     const next = [...productHighlights];
     next[index] = val;
     setProductHighlights(next);
+  };
+
+  const handleAddFaq = () => {
+    setProductFaqs([...productFaqs, { question: '', answer: '' }]);
+  };
+
+  const handleRemoveFaq = (index) => {
+    const next = [...productFaqs];
+    next.splice(index, 1);
+    setProductFaqs(next.length ? next : [{ question: '', answer: '' }]);
+  };
+
+  const handleFaqChange = (index, field, value) => {
+    const next = [...productFaqs];
+    next[index] = { ...next[index], [field]: value };
+    setProductFaqs(next);
   };
 
   const canReorderProducts =
@@ -1553,6 +1598,48 @@ export default function DashboardClient() {
                     onDeleteFromPool={(opt) => deleteProductOption('availableOption', opt)}
                   />
 
+                  <ProductIdealForPicker
+                    selected={productIdealFor}
+                    onSelectedChange={setProductIdealFor}
+                  />
+
+                  <section className="rounded-xl border border-ag-border bg-white p-4 sm:p-5">
+                    <div className="mb-3">
+                      <h3 className="text-sm font-bold text-ag-ink">Delivery &amp; turnaround</h3>
+                      <p className="mt-0.5 text-xs text-ag-ink/50">
+                        Shown under the inquiry buttons on the product page. Leave blank to hide a line.
+                      </p>
+                    </div>
+                    <p className="mb-3 text-xs text-ag-ink/45 rounded-lg bg-ag-surface/80 border border-dashed border-ag-border px-3 py-2">
+                      Trust strip (GST invoice, bulk pricing, All India delivery, quality checked) is the same on
+                      every product — no need to fill it here.
+                    </p>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <ModalFieldLabel htmlFor="product-dispatch-timeline">Standard dispatch</ModalFieldLabel>
+                        <input
+                          id="product-dispatch-timeline"
+                          type="text"
+                          value={productDispatchTimeline}
+                          onChange={(e) => setProductDispatchTimeline(e.target.value)}
+                          placeholder="e.g. Dispatch in 3-5 working days"
+                          className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white"
+                        />
+                      </div>
+                      <div>
+                        <ModalFieldLabel htmlFor="product-bulk-timeline">Bulk orders</ModalFieldLabel>
+                        <input
+                          id="product-bulk-timeline"
+                          type="text"
+                          value={productBulkOrderTimeline}
+                          onChange={(e) => setProductBulkOrderTimeline(e.target.value)}
+                          placeholder="e.g. Bulk orders: ask for timeline"
+                          className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white"
+                        />
+                      </div>
+                    </div>
+                  </section>
+
                   <ProductSpecificationForm
                     category={productCategory}
                     values={productSpecValues}
@@ -1628,6 +1715,55 @@ export default function DashboardClient() {
                         className="w-full px-4 py-2.5 border border-ag-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ag-primary/40 text-sm bg-white resize-y min-h-[10rem]"
                       />
                     </div>
+                  </div>
+                </section>
+
+                <section className="rounded-xl border border-ag-border bg-white p-4 sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-ag-ink">FAQs</h3>
+                      <p className="text-xs text-ag-ink/50 mt-0.5">
+                        Shown in the FAQs tab on the product page when you add at least one complete
+                        question and answer.
+                      </p>
+                    </div>
+                    <button type="button" onClick={handleAddFaq} className={adminBtnSmallOutlineBlue}>
+                      <Plus className="w-3.5 h-3.5" /> Add FAQ
+                    </button>
+                  </div>
+                  <div className="max-h-[280px] overflow-y-auto ag-scrollbar ag-scrollbar-thin space-y-3 pr-0.5">
+                    {productFaqs.map((faq, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg border border-ag-border bg-slate-50/50 p-3 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-ag-ink/50">FAQ {idx + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFaq(idx)}
+                            className={adminBtnIconDanger}
+                            title="Remove FAQ"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={faq.question}
+                          onChange={(e) => handleFaqChange(idx, 'question', e.target.value)}
+                          placeholder="Question"
+                          className="w-full px-3 py-2 border border-ag-border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-ag-primary/40"
+                        />
+                        <textarea
+                          rows={2}
+                          value={faq.answer}
+                          onChange={(e) => handleFaqChange(idx, 'answer', e.target.value)}
+                          placeholder="Answer"
+                          className="w-full px-3 py-2 border border-ag-border rounded-lg text-sm bg-white resize-y focus:outline-none focus:ring-2 focus:ring-ag-primary/40"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </section>
 

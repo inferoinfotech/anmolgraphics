@@ -47,6 +47,10 @@ export async function PUT(req, { params }) {
       specificationRows,
       options,
       customisation,
+      faqs,
+      idealFor,
+      dispatchTimeline,
+      bulkOrderTimeline,
     } = body;
 
     if (!title || !description || !category) {
@@ -121,6 +125,27 @@ export async function PUT(req, { params }) {
     }
     if (customisation !== undefined) {
       product.customisation = String(customisation).trim();
+    }
+    if (idealFor !== undefined) {
+      product.idealFor = Array.isArray(idealFor)
+        ? idealFor.map((o) => String(o).trim()).filter(Boolean)
+        : [];
+    }
+    if (dispatchTimeline !== undefined) {
+      product.dispatchTimeline = String(dispatchTimeline).trim();
+    }
+    if (bulkOrderTimeline !== undefined) {
+      product.bulkOrderTimeline = String(bulkOrderTimeline).trim();
+    }
+    if (faqs !== undefined) {
+      product.faqs = Array.isArray(faqs)
+        ? faqs
+            .map((f) => ({
+              question: String(f?.question || '').trim(),
+              answer: String(f?.answer || '').trim(),
+            }))
+            .filter((f) => f.question && f.answer)
+        : [];
     }
 
     await product.save();

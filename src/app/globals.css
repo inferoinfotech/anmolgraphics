@@ -20,6 +20,9 @@
   --ag-amber: #f0b552;
   --ag-olive: #8a9a2b;
   --ag-mist: #e6f1f7;
+  --ag-faq-icon-bg: #f1f5f8;
+  --ag-faq-open-bg: #f4f9fc;
+  --ag-faq-open-border: #b9d3e2;
   --ag-page-bg: #f6f8fa;
   --ag-text: #12293a;
   --ag-muted: #5b7283;
@@ -28,6 +31,7 @@
   --ag-chip-border: #c9d6df;
   --ag-blue-hover: #155a80;
   --ag-olive-dark: #5e6b16;
+  --ag-check-circle-bg: #eaf3da;
   --ag-warm: #faeeda;
   --ag-warm-border: #e8d7b8;
   --ag-warm-note-border: #ebd6ae;

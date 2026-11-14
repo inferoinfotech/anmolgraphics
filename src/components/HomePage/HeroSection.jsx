@@ -13,7 +13,7 @@ const HeroSection = () => {
                     <div className="px-4 mx-auto sm:px-6 lg:px-8">
                         <div className="max-w-2xl mx-auto text-center">
                             <h1 className="px-6 text-md md:text-lg text-gray-600 font-inter">"Trusted Identity Card Manufacturer for Businesses & Schools"</h1>
-                            <div className="mt-5 text-2xl font-bold leading-tight text-gray-900 sm:leading-tight sm:text-5xl lg:text-6xl lg:leading-tight font-pj">
+                            <div className="mt-5 text-2xl font-bold leading-tight text-[#0E3A56] sm:leading-tight sm:text-5xl lg:text-6xl lg:leading-tight font-pj">
                                 We Manufacture High-Quality
                                 <span className="relative inline-flex sm:inline">
                                     <span className="bg-gradient-to-r from-[#44BCFF] via-[#FF44EC] to-[#FF675E] blur-lg filter opacity-30 w-full h-full absolute inset-0"></span>
@@ -28,7 +28,7 @@ const HeroSection = () => {
                                 <Link
                                     href="/contact"
                                     title=""
-                                    className="inline-flex items-center justify-center w-full px-8 py-3 text-lg font-bold text-white transition-all duration-200 bg-gray-900 border-2 border-transparent sm:w-auto rounded-xl font-pj hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+                                    className="inline-flex items-center justify-center w-full px-8 py-3 text-lg font-bold text-white transition-all duration-200 bg-[#0E3A56] border-2 border-transparent sm:w-auto rounded-xl font-pj hover:bg-[#0a3048] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0E3A56]"
                                     role="button"
                                 >
                                     <svg
@@ -53,7 +53,7 @@ const HeroSection = () => {
                                 <Link
                                     href="/products"
                                     title=""
-                                    className="inline-flex items-center justify-center w-full px-6 py-3 mt-4 text-lg font-bold text-gray-900 transition-all duration-200 border-2 border-gray-400 sm:w-auto sm:mt-0 rounded-xl font-pj focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hover:bg-gray-900 focus:bg-gray-900 hover:text-white focus:text-white hover:border-gray-900 focus:border-gray-900"
+                                    className="inline-flex items-center justify-center w-full px-6 py-3 mt-4 text-lg font-bold text-[#0E3A56] transition-all duration-200 border-2 border-[#0E3A56] sm:w-auto sm:mt-0 rounded-xl font-pj focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0E3A56] hover:bg-[#0E3A56] focus:bg-[#0E3A56] hover:text-white focus:text-white hover:border-[#0E3A56] focus:border-[#0E3A56]"
                                     role="button"
                                 >
                                     Browse Products

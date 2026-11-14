@@ -75,10 +75,28 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     trim: true,
   }],
+  idealFor: [{
+    type: String,
+    trim: true,
+  }],
+  dispatchTimeline: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  bulkOrderTimeline: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   customisation: {
     type: String,
     default: '',
   },
+  faqs: [{
+    question: { type: String, trim: true, default: '' },
+    answer: { type: String, trim: true, default: '' },
+  }],
   sections: [{
     content: {
       type: String,

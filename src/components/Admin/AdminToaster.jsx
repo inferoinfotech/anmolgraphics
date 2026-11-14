@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertCircle, Check, Info, X } from 'lucide-react';
 
 const TOAST_STYLES = {
@@ -44,9 +45,19 @@ export function useAdminToaster() {
 
   const Toaster = useCallback(
     function AdminToasterViewport() {
-      return (
+      const [mounted, setMounted] = useState(false);
+
+      useEffect(() => {
+        setMounted(true);
+      }, []);
+
+      if (!mounted || typeof document === 'undefined') {
+        return null;
+      }
+
+      return createPortal(
         <div
-          className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-full max-w-sm pointer-events-none px-4 sm:px-0"
+          className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 w-full max-w-sm pointer-events-none px-4 sm:px-0"
           aria-live="polite"
           aria-atomic="true"
         >
@@ -73,7 +84,8 @@ export function useAdminToaster() {
               </div>
             );
           })}
-        </div>
+        </div>,
+        document.body
       );
     },
     [toasts, dismiss]

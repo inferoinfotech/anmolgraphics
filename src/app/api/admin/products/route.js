@@ -60,6 +60,10 @@ export async function POST(req) {
       specificationRows,
       options,
       customisation,
+      faqs,
+      idealFor,
+      dispatchTimeline,
+      bulkOrderTimeline,
     } = body;
 
     if (!title || !description || !category) {
@@ -113,6 +117,19 @@ export async function POST(req) {
         ? options.map((o) => String(o).trim()).filter(Boolean)
         : [],
       customisation: customisation?.trim() || '',
+      idealFor: Array.isArray(idealFor)
+        ? idealFor.map((o) => String(o).trim()).filter(Boolean)
+        : [],
+      dispatchTimeline: dispatchTimeline?.trim() || '',
+      bulkOrderTimeline: bulkOrderTimeline?.trim() || '',
+      faqs: Array.isArray(faqs)
+        ? faqs
+            .map((f) => ({
+              question: String(f?.question || '').trim(),
+              answer: String(f?.answer || '').trim(),
+            }))
+            .filter((f) => f.question && f.answer)
+        : [],
     });
 
     await newProduct.save();
