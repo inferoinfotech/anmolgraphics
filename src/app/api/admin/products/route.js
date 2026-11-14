@@ -22,7 +22,7 @@ export async function GET() {
     }
 
     await dbConnect();
-    const products = await Product.find({}).sort({ createdAt: -1 });
+    const products = await Product.find({}).sort({ sortOrder: 1, createdAt: -1 });
     return NextResponse.json({ products });
   } catch (error) {
     console.error('Fetch products error:', error);
@@ -71,9 +71,13 @@ export async function POST(req) {
       finalSlug = `${finalSlug}-${Math.random().toString(36).substring(2, 7)}`;
     }
 
+    const lastOrdered = await Product.findOne({}).sort({ sortOrder: -1 }).select('sortOrder');
+    const nextSortOrder = (lastOrdered?.sortOrder ?? -1) + 1;
+
     const newProduct = new Product({
       title,
       slug: finalSlug,
+      sortOrder: nextSortOrder,
       description,
       category,
       price: price || '',

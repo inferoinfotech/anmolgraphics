@@ -11,7 +11,7 @@ export async function GET() {
     // Auto-seed if empty
     await seedDatabase();
 
-    const products = await Product.find({}).sort({ createdAt: -1 });
+    const products = await Product.find({}).sort({ sortOrder: 1, createdAt: -1 });
     const categories = await Category.find({}).sort({ name: 1 });
 
     return NextResponse.json({

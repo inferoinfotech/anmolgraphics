@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import TiptapEditor from '@/components/Admin/TiptapEditor';
+import { useAdminToaster } from '@/components/Admin/AdminToaster';
 import { 
   Plus, 
   Trash2, 
@@ -16,12 +17,20 @@ import {
   Check, 
   Eye, 
   AlertCircle,
-  Search
+  Search,
+  GripVertical
 } from 'lucide-react';
+
+const VALID_TABS = ['products', 'categories'];
 
 export default function DashboardClient() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('products'); // 'products' or 'categories'
+  const searchParams = useSearchParams();
+  const { toast, Toaster } = useAdminToaster();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(() =>
+    VALID_TABS.includes(tabParam) ? tabParam : 'products'
+  );
   
   // Data States
   const [products, setProducts] = useState([]);
@@ -30,8 +39,11 @@ export default function DashboardClient() {
 
   // Category Form State
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [categoryError, setCategoryError] = useState('');
-  const [categorySuccess, setCategorySuccess] = useState('');
+  const [categoryFormMode, setCategoryFormMode] = useState('add'); // 'add' | 'edit'
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [categorySubmitting, setCategorySubmitting] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [categoryModalError, setCategoryModalError] = useState('');
 
   // Product Modal / Form States
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -51,7 +63,11 @@ export default function DashboardClient() {
   
   // Search States
   const [productSearch, setProductSearch] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const [categorySearch, setCategorySearch] = useState('');
+  const [draggedProductId, setDraggedProductId] = useState(null);
+  const [dragOverProductId, setDragOverProductId] = useState(null);
+  const [reorderSaving, setReorderSaving] = useState(false);
 
   // Dropdown States
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
@@ -69,7 +85,6 @@ export default function DashboardClient() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [productFormError, setProductFormError] = useState('');
-  const [productFormSuccess, setProductFormSuccess] = useState('');
 
   // Fetch initial data
   const fetchData = async () => {
@@ -79,6 +94,7 @@ export default function DashboardClient() {
       const prodRes = await fetch('/api/admin/products');
       
       if (catRes.status === 401 || prodRes.status === 401) {
+        toast('Session expired. Please sign in again.', 'error');
         router.push('/admin/login');
         return;
       }
@@ -90,6 +106,7 @@ export default function DashboardClient() {
       setProducts(prodData.products || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      toast('Failed to load catalog data.', 'error');
     } finally {
       setLoading(false);
     }
@@ -98,6 +115,22 @@ export default function DashboardClient() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (VALID_TABS.includes(tab) && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams, activeTab]);
+
+  const switchTab = useCallback(
+    (tab) => {
+      if (!VALID_TABS.includes(tab)) return;
+      setActiveTab(tab);
+      router.replace(`/admin/dashboard?tab=${tab}`, { scroll: false });
+    },
+    [router]
+  );
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -114,38 +147,88 @@ export default function DashboardClient() {
   const handleLogout = async () => {
     try {
       await fetch('/api/admin/logout', { method: 'POST' });
+      toast('Signed out successfully.', 'success');
       router.push('/admin/login');
       router.refresh();
     } catch (error) {
       console.error('Logout error:', error);
+      toast('Could not sign out. Try again.', 'error');
     }
   };
 
-  // Add Category
-  const handleAddCategory = async (e) => {
-    e.preventDefault();
-    setCategoryError('');
-    setCategorySuccess('');
-    
-    if (!newCategoryName.trim()) return;
+  const resetCategoryForm = () => {
+    setNewCategoryName('');
+    setCategoryFormMode('add');
+    setEditingCategoryId(null);
+  };
 
+  const closeCategoryModal = () => {
+    if (categorySubmitting) return;
+    setIsCategoryModalOpen(false);
+    setCategoryModalError('');
+    resetCategoryForm();
+  };
+
+  const openAddCategoryModal = () => {
+    setCategoryFormMode('add');
+    setEditingCategoryId(null);
+    setNewCategoryName('');
+    setCategoryModalError('');
+    setIsCategoryModalOpen(true);
+  };
+
+  const startEditCategory = (category) => {
+    setCategoryFormMode('edit');
+    setEditingCategoryId(category._id);
+    setNewCategoryName(category.name);
+    setCategoryModalError('');
+    setIsCategoryModalOpen(true);
+  };
+
+  // Add or update category
+  const handleCategoryFormSubmit = async (e) => {
+    e.preventDefault();
+    setCategoryModalError('');
+
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) {
+      const message = 'Category name is required.';
+      setCategoryModalError(message);
+      toast(message, 'error');
+      return;
+    }
+
+    setCategorySubmitting(true);
     try {
+      const isEdit = categoryFormMode === 'edit' && editingCategoryId;
       const res = await fetch('/api/admin/categories', {
-        method: 'POST',
+        method: isEdit ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCategoryName }),
+        body: JSON.stringify(
+          isEdit ? { id: editingCategoryId, name: trimmedName } : { name: trimmedName }
+        ),
       });
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setCategorySuccess('Category added successfully!');
-        setNewCategoryName('');
+        toast(
+          isEdit ? 'Category updated successfully!' : 'Category added successfully!',
+          'success'
+        );
+        setIsCategoryModalOpen(false);
+        resetCategoryForm();
         fetchData();
       } else {
-        setCategoryError(data.error || 'Failed to add category');
+        const message = data.error || (isEdit ? 'Failed to update category' : 'Failed to add category');
+        setCategoryModalError(message);
+        toast(message, 'error');
       }
     } catch (err) {
-      setCategoryError('An error occurred');
+      const message = 'An error occurred while saving the category.';
+      setCategoryModalError(message);
+      toast(message, 'error');
+    } finally {
+      setCategorySubmitting(false);
     }
   };
 
@@ -155,9 +238,6 @@ export default function DashboardClient() {
       'Delete Category',
       'Are you sure you want to delete this category? Products in this category will not be deleted but they will reference a deleted category.',
       async () => {
-        setCategoryError('');
-        setCategorySuccess('');
-
         try {
           const res = await fetch(`/api/admin/categories?id=${id}`, {
             method: 'DELETE',
@@ -165,17 +245,22 @@ export default function DashboardClient() {
           const data = await res.json();
 
           if (res.ok && data.success) {
-            setCategorySuccess('Category deleted successfully!');
+            toast('Category deleted successfully!', 'success');
+            if (editingCategoryId === id) {
+              setIsCategoryModalOpen(false);
+              resetCategoryForm();
+            }
             fetchData();
             return { success: true };
           } else {
             const errMsg = data.error || 'Failed to delete category';
-            setCategoryError(errMsg);
+            toast(errMsg, 'error');
             return { error: errMsg };
           }
         } catch (err) {
-          setCategoryError('An error occurred');
-          return { error: 'An error occurred' };
+          const errMsg = 'An error occurred while deleting the category.';
+          toast(errMsg, 'error');
+          return { error: errMsg };
         }
       }
     );
@@ -195,7 +280,6 @@ export default function DashboardClient() {
     setProductThumbnail('');
     setProductSections([]);
     setProductFormError('');
-    setProductFormSuccess('');
     setIsCategoryDropdownOpen(false);
     setIsRatingDropdownOpen(false);
     setIsProductModalOpen(true);
@@ -215,7 +299,6 @@ export default function DashboardClient() {
     setProductThumbnail(product.thumbnail || '');
     setProductSections(product.sections || []);
     setProductFormError('');
-    setProductFormSuccess('');
     setIsCategoryDropdownOpen(false);
     setIsRatingDropdownOpen(false);
     setIsProductModalOpen(true);
@@ -234,13 +317,18 @@ export default function DashboardClient() {
           const data = await res.json();
 
           if (res.ok && data.success) {
+            toast('Product deleted successfully!', 'success');
             fetchData();
             return { success: true };
           } else {
-            return { error: data.error || 'Failed to delete product' };
+            const errMsg = data.error || 'Failed to delete product';
+            toast(errMsg, 'error');
+            return { error: errMsg };
           }
         } catch (err) {
-          return { error: 'An error occurred' };
+          const errMsg = 'An error occurred while deleting the product.';
+          toast(errMsg, 'error');
+          return { error: errMsg };
         }
       }
     );
@@ -274,10 +362,14 @@ export default function DashboardClient() {
           setProductThumbnail(newUrls[0]);
         }
       } else {
-        setProductFormError(data.error || 'Failed to upload images');
+        const message = data.error || 'Failed to upload images';
+        setProductFormError(message);
+        toast(message, 'error');
       }
     } catch (err) {
-      setProductFormError('Error uploading files');
+      const message = 'Error uploading files';
+      setProductFormError(message);
+      toast(message, 'error');
     } finally {
       setUploading(false);
     }
@@ -296,10 +388,11 @@ export default function DashboardClient() {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     setProductFormError('');
-    setProductFormSuccess('');
 
     if (!productTitle.trim() || !productDescription.trim() || !productCategory) {
-      setProductFormError('Title, description, and category are required.');
+      const message = 'Title, description, and category are required.';
+      setProductFormError(message);
+      toast(message, 'error');
       return;
     }
 
@@ -336,18 +429,21 @@ export default function DashboardClient() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setProductFormSuccess(
-          editingProduct ? 'Product updated successfully!' : 'Product added successfully!'
-        );
+        const message = editingProduct
+          ? 'Product updated successfully!'
+          : 'Product added successfully!';
+        toast(message, 'success');
         fetchData();
-        setTimeout(() => {
-          setIsProductModalOpen(false);
-        }, 1500);
+        setIsProductModalOpen(false);
       } else {
-        setProductFormError(data.error || 'Failed to save product');
+        const message = data.error || 'Failed to save product';
+        setProductFormError(message);
+        toast(message, 'error');
       }
     } catch (err) {
-      setProductFormError('An error occurred while saving the product');
+      const message = 'An error occurred while saving the product';
+      setProductFormError(message);
+      toast(message, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -370,8 +466,14 @@ export default function DashboardClient() {
     setProductHighlights(next);
   };
 
+  const canReorderProducts =
+    productCategoryFilter === 'all' && !productSearch.trim();
+
   // Search Filters
   const filteredProducts = products.filter((product) => {
+    if (productCategoryFilter !== 'all' && product.category !== productCategoryFilter) {
+      return false;
+    }
     const query = productSearch.toLowerCase().trim();
     if (!query) return true;
     return (
@@ -382,11 +484,82 @@ export default function DashboardClient() {
     );
   });
 
+  const resetProductDragState = () => {
+    setDraggedProductId(null);
+    setDragOverProductId(null);
+  };
+
+  const handleProductDragStart = (e, productId) => {
+    if (!canReorderProducts || reorderSaving) return;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', productId);
+    setDraggedProductId(productId);
+  };
+
+  const handleProductDragOver = (e, productId) => {
+    if (!canReorderProducts || reorderSaving || !draggedProductId) return;
+    e.preventDefault();
+    if (draggedProductId !== productId) {
+      setDragOverProductId(productId);
+    }
+  };
+
+  const handleProductDrop = async (e, targetId) => {
+    e.preventDefault();
+    if (!canReorderProducts || !draggedProductId || draggedProductId === targetId) {
+      resetProductDragState();
+      return;
+    }
+
+    const idList = products.map((p) => p._id);
+    const fromIndex = idList.indexOf(draggedProductId);
+    const toIndex = idList.indexOf(targetId);
+    if (fromIndex === -1 || toIndex === -1) {
+      resetProductDragState();
+      return;
+    }
+
+    const newIdList = [...idList];
+    newIdList.splice(fromIndex, 1);
+    newIdList.splice(toIndex, 0, draggedProductId);
+
+    const idToProduct = new Map(products.map((p) => [p._id, p]));
+    setProducts(newIdList.map((id) => idToProduct.get(id)).filter(Boolean));
+
+    setReorderSaving(true);
+    resetProductDragState();
+    try {
+      const res = await fetch('/api/admin/products/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds: newIdList }),
+      });
+      if (res.ok) {
+        toast('Product display order saved.', 'success', 3000);
+      } else {
+        toast('Could not save display order.', 'error');
+        await fetchData();
+      }
+    } catch {
+      toast('Could not save display order.', 'error');
+      await fetchData();
+    } finally {
+      setReorderSaving(false);
+    }
+  };
+
   const filteredCategories = categories.filter((category) => {
     const query = categorySearch.toLowerCase().trim();
     if (!query) return true;
     return (category.name || '').toLowerCase().includes(query);
   });
+
+  const getCategoryProductCount = (name) =>
+    products.filter((p) => p.category === name).length;
+
+  const totalCategorizedProducts = products.filter((p) =>
+    categories.some((c) => c.name === p.category)
+  ).length;
 
   const showConfirm = (title, message, confirmCallback) => {
     setConfirmTitle(title);
@@ -404,19 +577,23 @@ export default function DashboardClient() {
       const result = await onConfirm();
       if (result && result.error) {
         setConfirmError(result.error);
+        toast(result.error, 'error');
         setConfirmLoading(false);
       } else {
         setConfirmLoading(false);
         setIsConfirmOpen(false);
       }
     } catch (err) {
-      setConfirmError('An unexpected error occurred.');
+      const message = 'An unexpected error occurred.';
+      setConfirmError(message);
+      toast(message, 'error');
       setConfirmLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row font-roboto">
+      <Toaster />
       {/* Mobile Top Header */}
       <header className="lg:hidden bg-slate-900 text-white flex items-center justify-between p-4 sticky top-0 z-40 shadow-md">
         <button
@@ -447,65 +624,87 @@ export default function DashboardClient() {
       )}
 
       {/* Sidebar Panel */}
-      <aside className={`
-        fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col justify-between p-6 z-50 transition-transform duration-300 transform
-        lg:translate-x-0 lg:static lg:h-screen lg:sticky lg:top-0 lg:flex shrink-0 shadow-xl lg:shadow-none
-        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div>
-          <div className="flex items-center justify-between gap-3 mb-10">
-            <img 
-              src="/assets/images/erasebg-transformed.png" 
-              alt="Logo" 
-              className="w-full max-w-full bg-white/10 p-1.5 rounded-lg" 
-            />
-            {/* <button
-              onClick={() => setIsMobileSidebarOpen(false)}
-              className="lg:hidden p-1 hover:bg-white/10 rounded transition"
-              title="Close Menu"
-            >
-              <X className="w-5 h-5 text-slate-400" />
-            </button> */}
-          </div>
-
-          <nav className="space-y-1.5">
+      <aside
+        className={`
+          fixed inset-y-0 left-0 w-[17.5rem] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white
+          flex flex-col z-50 transition-transform duration-300 transform border-r border-white/5 shadow-2xl lg:shadow-none
+          lg:translate-x-0 lg:static lg:h-screen lg:sticky lg:top-0 lg:flex shrink-0
+          ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        <div className="p-5 border-b border-white/5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <img
+                src="/assets/images/erasebg-transformed.png"
+                alt="Anmol Graphics"
+                className="h-10 w-10 object-contain bg-white rounded-lg p-1 shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Admin</p>
+                <p className="text-sm font-bold text-white truncate leading-tight">Anmol Graphics</p>
+              </div>
+            </div>
             <button
+              type="button"
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="lg:hidden p-2 hover:bg-white/10 rounded-lg transition text-slate-400 hover:text-white"
+              title="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-5">
+          <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
+            Management
+          </p>
+          <nav className="space-y-1">
+            <button
+              type="button"
               onClick={() => {
-                setActiveTab('products');
+                switchTab('products');
                 setIsMobileSidebarOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
-                activeTab === 'products' 
-                  ? 'bg-white/15 text-white' 
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'products'
+                  ? 'bg-white text-slate-900 shadow-lg shadow-black/25'
+                  : 'text-slate-400 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <Package className="w-5 h-5" />
+              <Package className={`w-5 h-5 shrink-0 ${activeTab === 'products' ? 'text-slate-900' : ''}`} />
               Products
             </button>
             <button
+              type="button"
               onClick={() => {
-                setActiveTab('categories');
+                switchTab('categories');
                 setIsMobileSidebarOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
-                activeTab === 'categories' 
-                  ? 'bg-white/15 text-white' 
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'categories'
+                  ? 'bg-white text-slate-900 shadow-lg shadow-black/25'
+                  : 'text-slate-400 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <Grid className="w-5 h-5" />
+              <Grid className={`w-5 h-5 shrink-0 ${activeTab === 'categories' ? 'text-slate-900' : ''}`} />
               Categories
             </button>
           </nav>
         </div>
 
-        <div className="p-6 border-t border-white/10">
+        <div className="p-4 border-t border-white/10 space-y-2">
+          <div className="rounded-xl bg-white/5 border border-white/5 px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Session</p>
+            <p className="text-sm font-semibold text-white mt-0.5">Administrator</p>
+          </div>
           <button
+            type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-500/10 transition"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-300 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
             Logout
           </button>
         </div>
@@ -513,23 +712,35 @@ export default function DashboardClient() {
 
       {/* Main Content Area */}
       <main className="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-auto lg:max-h-screen">
-        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 font-roboto">
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
               {activeTab === 'products' ? 'Products Directory' : 'Categories Directory'}
             </h1>
-            <p className="text-slate-500 text-xs sm:text-sm mt-1">
+            <p className="text-slate-500 text-sm mt-1 font-normal">
               Add, update or delete your store inventory configuration.
             </p>
           </div>
 
           {activeTab === 'products' && (
             <button
+              type="button"
               onClick={openAddProductModal}
               className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-800 transition flex items-center gap-2 shadow-sm"
             >
               <Plus className="w-5 h-5" />
               Add Product
+            </button>
+          )}
+
+          {activeTab === 'categories' && (
+            <button
+              type="button"
+              onClick={openAddCategoryModal}
+              className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-800 transition flex items-center gap-2 shadow-sm"
+            >
+              <Plus className="w-5 h-5" />
+              Add Category
             </button>
           )}
         </header>
@@ -563,9 +774,9 @@ export default function DashboardClient() {
             {/* PRODUCTS TAB */}
             {activeTab === 'products' && (
               <div className="space-y-4">
-                {/* Search Bar */}
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                  <div className="relative max-w-md">
+                {/* Search & filters */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+                  <div className="relative flex-1 max-w-xl">
                     <input
                       type="text"
                       value={productSearch}
@@ -578,6 +789,7 @@ export default function DashboardClient() {
                     </div>
                     {productSearch && (
                       <button
+                        type="button"
                         onClick={() => setProductSearch('')}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
                       >
@@ -585,13 +797,42 @@ export default function DashboardClient() {
                       </button>
                     )}
                   </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                      Category
+                    </label>
+                    <select
+                      value={productCategoryFilter}
+                      onChange={(e) => setProductCategoryFilter(e.target.value)}
+                      className="w-full sm:w-52 px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm bg-white text-slate-800"
+                    >
+                      <option value="all">All categories</option>
+                      {categories.map((cat) => (
+                        <option key={cat._id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+
+                {!canReorderProducts && products.length > 0 && (
+                  <p className="text-xs text-slate-500 px-1">
+                    Clear search and set category to &quot;All categories&quot; to drag and reorder how products appear on the site.
+                  </p>
+                )}
+                {reorderSaving && (
+                  <p className="text-xs font-semibold text-slate-600 px-1">Saving display order…</p>
+                )}
 
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                   <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
                   <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100 shadow-sm">
                       <tr>
+                        <th className="px-3 py-4 w-10 text-xs font-bold text-slate-500 uppercase tracking-wider" title="Drag to reorder">
+                          #
+                        </th>
                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Product</th>
                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Category</th>
                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Rating</th>
@@ -601,13 +842,42 @@ export default function DashboardClient() {
                     <tbody className="divide-y divide-slate-100 text-sm">
                       {filteredProducts.length === 0 ? (
                         <tr>
-                          <td colSpan="4" className="text-center py-10 text-slate-400">
+                          <td colSpan="5" className="text-center py-10 text-slate-400">
                             {products.length === 0 ? 'No products found. Add one to get started!' : 'No matching products found.'}
                           </td>
                         </tr>
                       ) : (
-                        filteredProducts.map((product) => (
-                          <tr key={product._id} className="hover:bg-slate-50/50 transition">
+                        filteredProducts.map((product, displayIndex) => (
+                          <tr
+                            key={product._id}
+                            draggable={canReorderProducts && !reorderSaving}
+                            onDragStart={(e) => handleProductDragStart(e, product._id)}
+                            onDragOver={(e) => handleProductDragOver(e, product._id)}
+                            onDragLeave={() => {
+                              if (dragOverProductId === product._id) setDragOverProductId(null);
+                            }}
+                            onDrop={(e) => handleProductDrop(e, product._id)}
+                            onDragEnd={resetProductDragState}
+                            className={`transition ${
+                              draggedProductId === product._id ? 'opacity-40' : 'hover:bg-slate-50/50'
+                            } ${dragOverProductId === product._id ? 'bg-slate-100 ring-1 ring-inset ring-slate-300' : ''}`}
+                          >
+                            <td className="px-3 py-4 text-slate-400">
+                              <div className="flex items-center gap-1">
+                                {canReorderProducts ? (
+                                  <button
+                                    type="button"
+                                    className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                                    title="Drag to reorder"
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                  >
+                                    <GripVertical className="w-4 h-4" />
+                                  </button>
+                                ) : (
+                                  <span className="text-xs tabular-nums pl-1">{displayIndex + 1}</span>
+                                )}
+                              </div>
+                            </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-4">
                                 <img
@@ -666,61 +936,45 @@ export default function DashboardClient() {
 
             {/* CATEGORIES TAB */}
             {activeTab === 'categories' && (
-              <div className="grid md:grid-cols-3 gap-8 items-start">
-                {/* Categories Form Card */}
-                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm md:col-span-1">
-                  <h3 className="text-md font-bold text-slate-800 mb-4">Add New Category</h3>
-                  
-                  {categoryError && (
-                    <div className="bg-red-50 text-red-600 text-xs font-semibold p-3 rounded-lg mb-4 border border-red-100 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" /> {categoryError}
-                    </div>
-                  )}
-
-                  {categorySuccess && (
-                    <div className="bg-green-50 text-green-600 text-xs font-semibold p-3 rounded-lg mb-4 border border-green-100 flex items-center gap-2">
-                      <Check className="w-4 h-4" /> {categorySuccess}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleAddCategory} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Category Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="e.g. Identity Cards"
-                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent text-sm"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition uppercase tracking-wider"
-                    >
-                      Save Category
-                    </button>
-                  </form>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total categories</p>
+                    <p className="text-2xl font-extrabold text-slate-800 mt-1">{categories.length}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Products linked</p>
+                    <p className="text-2xl font-extrabold text-slate-800 mt-1">{totalCategorizedProducts}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Showing results</p>
+                    <p className="text-2xl font-extrabold text-slate-800 mt-1">
+                      {filteredCategories.length}
+                      {categorySearch ? ` / ${categories.length}` : ''}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Categories List Card */}
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm md:col-span-2 overflow-hidden flex flex-col">
-                  {/* Search Bar inside Categories Card */}
-                  <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-                    <div className="relative max-w-md">
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[420px]">
+                  <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">All categories</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Use edit to rename — linked products update automatically.</p>
+                    </div>
+                    <div className="relative w-full sm:max-w-xs">
                       <input
                         type="text"
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
-                        placeholder="Search categories by name..."
-                        className="w-full pl-10 pr-10 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm bg-white"
+                        placeholder="Search categories..."
+                        className="w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm bg-white"
                       />
                       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                         <Search className="w-4 h-4" />
                       </div>
                       {categorySearch && (
                         <button
+                          type="button"
                           onClick={() => setCategorySearch('')}
                           className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
                         >
@@ -730,36 +984,67 @@ export default function DashboardClient() {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto max-h-[65vh] overflow-y-auto">
+                  <div className="overflow-x-auto flex-1 max-h-[62vh] overflow-y-auto">
                     <table className="w-full text-left border-collapse">
-                      <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100 shadow-sm">
+                      <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100">
                         <tr>
-                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Category Name</th>
-                          <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
+                          <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider w-12">#</th>
+                          <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Category name</th>
+                          <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Products</th>
+                          <th className="px-5 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-sm">
                         {filteredCategories.length === 0 ? (
                           <tr>
-                            <td colSpan="2" className="text-center py-8 text-slate-400">
-                              {categories.length === 0 ? 'No categories found.' : 'No matching categories found.'}
+                            <td colSpan="4" className="text-center py-12 text-slate-400">
+                              <Grid className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                              {categories.length === 0
+                                ? 'No categories yet. Click Add Category to create one.'
+                                : 'No categories match your search.'}
                             </td>
                           </tr>
                         ) : (
-                          filteredCategories.map((category) => (
-                            <tr key={category._id} className="hover:bg-slate-50/50 transition">
-                              <td className="px-6 py-4 font-semibold text-slate-700">{category.name}</td>
-                              <td className="px-6 py-4 text-right">
-                                <button
-                                  onClick={() => handleDeleteCategory(category._id)}
-                                  className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
-                                  title="Delete Category"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
+                          filteredCategories.map((category, index) => {
+                            const productCount = getCategoryProductCount(category.name);
+                            return (
+                              <tr key={category._id} className="hover:bg-slate-50/60 transition">
+                                <td className="px-5 py-4 text-slate-400 font-medium tabular-nums">{index + 1}</td>
+                                <td className="px-5 py-4 font-semibold text-slate-800">{category.name}</td>
+                                <td className="px-5 py-4">
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                      productCount > 0
+                                        ? 'bg-slate-100 text-slate-700'
+                                        : 'bg-slate-50 text-slate-400'
+                                    }`}
+                                  >
+                                    {productCount} {productCount === 1 ? 'product' : 'products'}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => startEditCategory(category)}
+                                      className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                                      title="Edit category"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteCategory(category._id)}
+                                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
+                                      title="Delete category"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -770,6 +1055,91 @@ export default function DashboardClient() {
           </>
         )}
       </main>
+
+      {/* CATEGORY FORM MODAL */}
+      {isCategoryModalOpen && (
+        <div
+          onClick={(e) => {
+            if (categorySubmitting) return;
+            if (e.target === e.currentTarget) {
+              closeCategoryModal();
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+              <div>
+                <h2 className="text-base font-bold">
+                  {categoryFormMode === 'edit' ? 'Edit Category' : 'Add Category'}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {categoryFormMode === 'edit'
+                    ? 'Renaming updates all products in this category.'
+                    : 'Create a new category for your catalog.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={categorySubmitting}
+                onClick={closeCategoryModal}
+                className="p-1.5 hover:bg-white/10 rounded-lg transition disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {categoryModalError && (
+                <div className="bg-red-50 text-red-600 text-sm font-semibold p-3 rounded-xl mb-4 border border-red-100 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {categoryModalError}
+                </div>
+              )}
+
+              <form onSubmit={handleCategoryFormSubmit} className="space-y-5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    Category name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="e.g. Identity Cards"
+                    disabled={categorySubmitting}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm disabled:opacity-60"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    disabled={categorySubmitting}
+                    onClick={closeCategoryModal}
+                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={categorySubmitting}
+                    className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition disabled:opacity-60 min-w-[120px]"
+                  >
+                    {categorySubmitting
+                      ? 'Saving...'
+                      : categoryFormMode === 'edit'
+                        ? 'Update'
+                        : 'Save'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PRODUCT FORM MODAL */}
       {isProductModalOpen && (
@@ -802,12 +1172,6 @@ export default function DashboardClient() {
               {productFormError && (
                 <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 text-sm font-semibold mb-6 flex items-center gap-2">
                   <AlertCircle className="w-5 h-5" /> {productFormError}
-                </div>
-              )}
-
-              {productFormSuccess && (
-                <div className="bg-green-50 text-green-600 p-4 rounded-xl border border-green-100 text-sm font-semibold mb-6 flex items-center gap-2">
-                  <Check className="w-5 h-5" /> {productFormSuccess}
                 </div>
               )}
 

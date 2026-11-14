@@ -50,6 +50,52 @@ export async function POST(req) {
   }
 }
 
+export async function PATCH(req) {
+  try {
+    const isAuth = await verifyAdminAuth();
+    if (!isAuth) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id, name } = await req.json();
+    if (!id) {
+      return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
+    }
+    if (!name || name.trim() === '') {
+      return NextResponse.json({ error: 'Category name is required' }, { status: 400 });
+    }
+
+    const trimmedName = name.trim();
+
+    await dbConnect();
+
+    const category = await Category.findById(id);
+    if (!category) {
+      return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+    }
+
+    const previousName = category.name;
+    if (previousName === trimmedName) {
+      return NextResponse.json({ success: true, category });
+    }
+
+    const existing = await Category.findOne({ name: trimmedName });
+    if (existing && existing._id.toString() !== id) {
+      return NextResponse.json({ error: 'Category already exists' }, { status: 400 });
+    }
+
+    category.name = trimmedName;
+    await category.save();
+
+    await Product.updateMany({ category: previousName }, { category: trimmedName });
+
+    return NextResponse.json({ success: true, category });
+  } catch (error) {
+    console.error('Update category error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(req) {
   try {
     const isAuth = await verifyAdminAuth();
