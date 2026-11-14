@@ -27,8 +27,8 @@ const Navbar = () => {
     ];
 
     return (
-        <header className="bg-white/30 backdrop-blur-lg py-2 px-4 sm:px-0 z-50  w-full fixed top-0 bg-gradient-to-b from-[#f5f7ff] to-white">
-            <div className="max-w-[1440px] mx-auto flex justify-between items-center">
+        <header className="fixed top-0 z-50 w-full bg-white/30 py-2 backdrop-blur-lg bg-gradient-to-b from-[#f5f7ff] to-white">
+            <div className="site-container flex items-center justify-between gap-4">
                 {/* Logo */}
                 <Link href="/">
                     <img src="/assets/images/erasebg-transformed.png" alt="logo" width={144} height={50} className="w-40" />
@@ -68,8 +68,13 @@ const Navbar = () => {
                 </div>
 
                 {/* Mobile Menu Button */}
-                <button onClick={handleClick} className="lg:hidden ml-7">
-                    <LayoutGrid className="w-7 h-7" />
+                <button
+                    type="button"
+                    onClick={handleClick}
+                    className="shrink-0 lg:hidden"
+                    aria-label="Open menu"
+                >
+                    <LayoutGrid className="h-7 w-7" />
                 </button>
             </div>
 
@@ -84,16 +89,26 @@ const Navbar = () => {
                         className="fixed w-full h-screen top-0 left-0 shadow-md overflow-auto z-50 flex flex-col items-center justify-center bg-gradient-to-b from-[#f0f4ff] to-white"
                     >
                         {/* Top Section: Logo & Close Button */}
-                        <div className="absolute top-6 flex items-center justify-between w-full px-4">
-                            {/* Logo */}
-                            <Link href="/">
-                                <img src="/assets/images/erasebg-transformed.png" alt="logo" width={144} height={50} className="w-40" />
-                            </Link>
-
-                            {/* Close Button */}
-                            <button onClick={handleClick} className="border border-slate-500 p-1 rounded-xl">
-                                <X className="w-6 h-6 text-slate-700" />
-                            </button>
+                        <div className="absolute left-0 right-0 top-6">
+                            <div className="site-container flex items-center justify-between">
+                                <Link href="/">
+                                    <img
+                                        src="/assets/images/erasebg-transformed.png"
+                                        alt="logo"
+                                        width={144}
+                                        height={50}
+                                        className="w-40"
+                                    />
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={handleClick}
+                                    className="rounded-xl border border-slate-500 p-1"
+                                    aria-label="Close menu"
+                                >
+                                    <X className="h-6 w-6 text-slate-700" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Mobile Menu Items */}

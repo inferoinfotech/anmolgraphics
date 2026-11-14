@@ -13,9 +13,9 @@ export default function ProductPageWrapper() {
   return (
     <div className="bg-white">
       <div className="border-b">
-        <ProBreadcrumbs searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        <ProBreadcrumbs />
       </div>
-      <Productlist searchTerm={searchTerm} />
+      <Productlist searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
     </div>
   )
 }

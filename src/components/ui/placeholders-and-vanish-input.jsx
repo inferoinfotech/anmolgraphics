@@ -7,7 +7,10 @@ import { cn } from "@/lib/utils";
 export function PlaceholdersAndVanishInput({
     placeholders,
     onChange,
-    onSubmit
+    onSubmit,
+    className,
+    compact = false,
+    inputId,
 }) {
     const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
 
@@ -171,7 +174,8 @@ export function PlaceholdersAndVanishInput({
         (<form
             className={cn(
                 "w-full relative max-w-xl mx-auto bg-white h-12 rounded-full overflow-hidden shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),_0px_1px_0px_0px_rgba(25,28,33,0.02),_0px_0px_0px_1px_rgba(25,28,33,0.08)] transition duration-200",
-                value && "bg-gray-50"
+                value && "bg-gray-50",
+                className
             )}
             onSubmit={handleSubmit}>
             <canvas
@@ -189,16 +193,18 @@ export function PlaceholdersAndVanishInput({
                 }}
                 onKeyDown={handleKeyDown}
                 ref={inputRef}
+                id={inputId}
                 value={value}
                 type="text"
                 className={cn(
-                    "w-full relative text-sm sm:text-base z-40 border-none bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
+                    "w-full relative text-sm sm:text-base z-40 border-none bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pr-14",
+                    compact ? "pl-4" : "pl-4 sm:pl-10 pr-20",
                     animating && "text-transparent"
                 )} />
             <button
                 disabled={!value}
                 type="submit"
-                className="absolute right-2 top-1/2 z-40 -translate-y-1/2 h-8 w-8 rounded-full disabled:bg-gray-400 bg-black transition duration-200 flex items-center justify-center">
+                className="absolute right-2 top-1/2 z-40 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-[#0E3A56] text-white transition duration-200 hover:bg-[#0a3048] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#0E3A56]">
                 <motion.svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -209,7 +215,7 @@ export function PlaceholdersAndVanishInput({
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="text-gray-300 h-4 w-4">
+                    className="h-4 w-4 text-white">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <motion.path
                         d="M5 12l14 0"
@@ -250,7 +256,10 @@ export function PlaceholdersAndVanishInput({
                                 duration: 0.3,
                                 ease: "linear",
                             }}
-                            className=" text-sm sm:text-base font-normal text-neutral-500 pl-4 sm:pl-12 text-left w-[calc(100%-2rem)] truncate">
+                            className={cn(
+                                "text-sm sm:text-base font-normal text-neutral-600 text-left w-[calc(100%-2.75rem)] truncate",
+                                compact ? "pl-4" : "pl-4 sm:pl-12"
+                            )}>
                             {placeholders[currentPlaceholder]}
                         </motion.p>
                     )}

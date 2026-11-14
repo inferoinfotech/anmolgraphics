@@ -1,14 +1,29 @@
 "use client"
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import { PlaceholdersAndVanishInput } from "../ui/placeholders-and-vanish-input"
+import ProductCatalogCard from "./ProductCatalogCard"
+import { ProductCategorySidebar, ProductCategoryMobileDrawer } from "./ProductCategorySidebar"
+import {
+    normalizeCategorySelection,
+    resolveSelectedCategory,
+} from "./productCategoryNavUtils"
 
-const Productlist = ({ searchTerm = "" }) => {
+const SEARCH_PLACEHOLDERS = [
+    "Find your perfect ID card...",
+    "Looking for a custom lanyard?",
+    "Search badges, holders, and attachments...",
+    "Type to find medals and awards",
+    "Explore trending products...",
+]
+
+const Productlist = ({ searchTerm = "", setSearchTerm }) => {
     const [categories, setCategories] = useState([{ name: "All", products: [] }])
     const [selectedCategoryName, setSelectedCategoryName] = useState("All")
-    const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false)
     const [loading, setLoading] = useState(true)
+
+    const setCategory = useCallback((name) => {
+        setSelectedCategoryName(normalizeCategorySelection(name))
+    }, [])
 
     useEffect(() => {
         const loadProducts = async () => {
@@ -36,7 +51,10 @@ const Productlist = ({ searchTerm = "" }) => {
         loadProducts()
     }, [])
 
-    const selectedCategory = categories.find(c => c.name === selectedCategoryName) || categories[0] || { name: "All", products: [] }
+    const selectedCategory = useMemo(
+        () => resolveSelectedCategory(categories, selectedCategoryName),
+        [categories, selectedCategoryName]
+    )
 
     // Filter products based on search term
     const filteredProducts = selectedCategory.products.filter(
@@ -75,106 +93,43 @@ const Productlist = ({ searchTerm = "" }) => {
     }
 
     return (
-        <main className="mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
-            {/* Mobile Category Filter Toggle */}
-            <div className="lg:hidden py-4">
-                <button
-                    onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-                    className="flex items-center justify-between w-full bg-slate-100 px-4 py-3 rounded-xl"
-                >
-                    <span className="font-medium">Category: {selectedCategory.name}</span>
-                    {isMobileFilterOpen ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                </button>
-
-                {/* Mobile Category Dropdown */}
-                {isMobileFilterOpen && (
-                    <div className="mt-2 bg-slate-100 rounded-xl p-3 shadow-md">
-                        <ul className="space-y-1">
-                            {categories.map((category) => (
-                                <li
-                                    key={category.name}
-                                    className={`py-2 px-3 rounded-lg transition-all duration-200 cursor-pointer 
-                                    ${selectedCategory.name === category.name ? "bg-slate-300" : "hover:bg-slate-200"}`}
-                                    onClick={() => {
-                                        setSelectedCategoryName(category.name)
-                                        setIsMobileFilterOpen(false)
-                                    }}
-                                >
-                                    {category.name}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-x-8 gap-y-5 lg:grid-cols-5 py-5 lg:py-10">
-                {/* Left Sidebar: Product Categories (Desktop) */}
-                <aside className="hidden lg:block bg-slate-100 px-5 py-5 rounded-3xl max-h-fit sticky top-24">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Product Categories</h3>
-                    <ul className="space-y-2 text-sm font-medium text-gray-900">
-                        {categories.map((category) => (
-                            <li
-                                key={category.name}
-                                className={`py-2 px-2 rounded-lg transition-all duration-300 cursor-pointer 
-                                ${selectedCategory.name === category.name ? "bg-slate-300" : "hover:bg-slate-200 hover:translate-x-1"}`}
-                                onClick={() => setSelectedCategoryName(category.name)}
-                            >
-                                {category.name}
-                            </li>
-                        ))}
-                    </ul>
-                </aside>
+        <main className="site-container-fluid">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 py-5 lg:grid-cols-5 lg:gap-x-8 lg:py-10">
+                <ProductCategorySidebar
+                    categories={categories}
+                    selectedName={selectedCategoryName}
+                    onSelect={setCategory}
+                />
 
                 {/* Right Side: Products Display */}
-                <section className="lg:col-span-4 p-2 sm:p-5">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">{selectedCategory.name}</h2>
+                <section className="min-w-0 lg:col-span-4 lg:pr-0">
+                    <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
+                        <h2 className="text-xl font-semibold text-gray-900">{selectedCategory.name}</h2>
+                        <div className="w-full sm:max-w-md">
+                            <label htmlFor="product-search" className="sr-only">
+                                Search products
+                            </label>
+                            <PlaceholdersAndVanishInput
+                                inputId="product-search"
+                                compact
+                                placeholders={SEARCH_PLACEHOLDERS}
+                                onChange={(e) => setSearchTerm?.(e.target.value)}
+                                onSubmit={(e) => e.preventDefault()}
+                                className="mx-0 h-11 max-w-full border-2 border-slate-300 bg-slate-50 shadow-[0_2px_10px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/90 focus-within:border-slate-500 focus-within:bg-white focus-within:shadow-md"
+                            />
+                        </div>
+                    </div>
+                    <ProductCategoryMobileDrawer
+                        categories={categories}
+                        selectedName={selectedCategoryName}
+                        onSelect={setCategory}
+                    />
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                        {filteredProducts.map((product, index) => (
-                            <div
-                                key={index}
-                                className="border border-slate-200 hover:border-slate-700 transition-all duration-300 rounded-xl sm:rounded-2xl p-3 sm:p-4 group relative flex flex-col h-full"
-                            >
-                                {/* Product Image */}
-                                <Image
-                                    src={product.thumbnail || product.images[0] || "/placeholder.svg"}
-                                    alt={product.title}
-                                    width={300}
-                                    height={200}
-                                    className="w-full h-32 sm:h-40 md:h-48 object-cover rounded-lg"
-                                />
-                                {/* Content Section */}
-                                <div className="my-2 sm:my-4 flex-grow">
-                                    <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 line-clamp-2">
-                                        {product.title}
-                                    </h3>
-                                </div>
-
-                                {/* Buttons */}
-                                <div className="mt-auto flex justify-between items-center">
-                                    <Link
-                                        href={`/products/${product.slug}`}
-                                        className="text-xs sm:text-sm bg-gray-900 text-white px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg hover:bg-gray-700"
-                                    >
-                                        View Products
-                                    </Link>
-                                    <span className="text-gray-600 flex items-center group-hover:translate-x-1 transition-all duration-300">
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-5 w-5 ml-2"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M5 12h14"></path>
-                                            <path d="m12 5 7 7-7 7"></path>
-                                        </svg>
-                                    </span>
-                                </div>
-                            </div>
+                        {filteredProducts.map((product) => (
+                            <ProductCatalogCard
+                                key={product._id || product.slug}
+                                product={product}
+                            />
                         ))}
                     </div>
 

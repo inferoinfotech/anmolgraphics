@@ -1,49 +1,27 @@
 'use client'
 import React from "react";
-import { PlaceholdersAndVanishInput } from "../ui/placeholders-and-vanish-input";
 import Link from "next/link";
 
-const ProBreadcurmbs = ({ searchTerm, setSearchTerm }) => {
-    const placeholders = [
-        "Find your perfect ID card...",
-        "Looking for a custom lanyard?",
-        "Search printed mugs and trophies...",
-        "Type to find medals and awards",
-        "Explore trending products...",
-    ];
-
-    const handleChange = (e) => {
-        setSearchTerm(e.target.value); // Update search term state
-    };
-
-    const onSubmit = (e) => {
-        e.preventDefault();
-        console.log("Search submitted:", searchTerm);
-    };
-
+const ProBreadcurmbs = () => {
     return (
-        <div className="max-w-[1440px] mx-auto py-6 px-4 lg:py-10">
-            {/* Breadcrumb */}
-            <div className="text-gray-400 text-sm md:text-md">
-                <Link href="/" className="hover:underline">Home</Link>
+        <div className="site-container py-6 lg:py-10">
+            <nav className="text-sm text-gray-400" aria-label="Breadcrumb">
+                <Link href="/" className="hover:underline">
+                    Home
+                </Link>
                 <span className="mx-2">→</span>
                 <Link href="/products" className="font-medium text-gray-600 hover:underline">
                     Products
                 </Link>
-            </div>
+            </nav>
 
-            {/* Title */}
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mt-2">Browse Trending Products</h1>
-
-            {/* Search Bar */}
-            <div className="mt-6 md:mt-10">
-                <PlaceholdersAndVanishInput
-                    placeholders={placeholders}
-                    onChange={handleChange}
-                    onSubmit={onSubmit}
-                    value={searchTerm}
-                />
-            </div>
+            <h1 className="mt-2 text-2xl font-bold text-gray-900 md:text-3xl lg:text-4xl">
+                Browse trending products
+            </h1>
+            <p className="mt-2 max-w-3xl text-sm text-gray-600 md:text-base">
+                Premium ID cards, lanyards, badges, and custom printing from Anmol Graphics — for
+                schools, corporates, and events across India.
+            </p>
         </div>
     );
 };
