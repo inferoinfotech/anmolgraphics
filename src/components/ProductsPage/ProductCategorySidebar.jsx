@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { IconAdjustmentsHorizontal, IconSearch, IconX } from "@tabler/icons-react";
 import { CategoryIcon } from "./productCategoryIcons";
 import { mergeCategoriesForNav, normalizeCategorySelection } from "./productCategoryNavUtils";
@@ -35,9 +35,16 @@ function CategoryRow({ category, active, onSelect }) {
   );
 }
 
-function ProductCategoryPanel({ categories, selectedName, onSelect, className = "" }) {
+function ProductCategoryPanel({
+  categories,
+  selectedName,
+  onSelect,
+  hideTitle = false,
+  defaultExpanded = false,
+  className = "",
+}) {
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   const navCategories = useMemo(() => mergeCategoriesForNav(categories), [categories]);
   const selected = normalizeCategorySelection(selectedName);
@@ -72,7 +79,9 @@ function ProductCategoryPanel({ categories, selectedName, onSelect, className = 
     <div
       className={`flex max-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-2xl bg-[#F3F6FA] p-4 ${className}`}
     >
-      <h2 className="mb-3 text-lg font-medium text-[#0E3A56]">Product categories</h2>
+      {!hideTitle && (
+        <h2 className="mb-3 text-lg font-medium text-[#0E3A56]">Product categories</h2>
+      )}
 
       <div className="relative mb-3 shrink-0">
         <IconSearch
@@ -102,12 +111,13 @@ function ProductCategoryPanel({ categories, selectedName, onSelect, className = 
 
       <nav
         aria-label="Product categories"
-        className="min-h-0 flex-1 overflow-y-auto [scrollbar-color:#cbd5e1_transparent] [scrollbar-width:thin]"
+        tabIndex={0}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 touch-pan-y [scrollbar-color:#cbd5e1_transparent] [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]"
       >
         {filtered.length === 0 ? (
           <p className="py-4 text-center text-sm text-[#5B7283]">No categories found</p>
         ) : (
-          <ul className="space-y-0.5">
+          <ul className="space-y-0.5 pb-2">
             {visibleList.map((category) => (
               <CategoryRow
                 key={category.name}
@@ -120,7 +130,7 @@ function ProductCategoryPanel({ categories, selectedName, onSelect, className = 
         )}
 
         {!searchActive && hiddenCount > 0 ? (
-          <div className="mt-3 border-t border-[#DCE6ED] pt-3">
+          <div className="mt-3 border-t border-[#DCE6ED] pt-3 pb-2">
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
@@ -147,6 +157,9 @@ export function ProductCategorySidebar({ categories, selectedName, onSelect }) {
 
 export function ProductCategoryMobileDrawer({ categories, selectedName, onSelect }) {
   const [open, setOpen] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const startYRef = useRef(0);
   const selected = normalizeCategorySelection(selectedName);
 
   const handleSelect = (name) => {
@@ -155,13 +168,60 @@ export function ProductCategoryMobileDrawer({ categories, selectedName, onSelect
   };
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setDragY(0);
+      setIsDragging(false);
+      return;
+    }
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
   }, [open]);
+
+  // Pointer drag events for swipe-down to close
+  const handlePointerDown = (e) => {
+    if (e.button !== 0) return;
+    startYRef.current = e.clientY;
+    setIsDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // safe fallback
+    }
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging) return;
+    const deltaY = e.clientY - startYRef.current;
+    if (deltaY > 0) {
+      setDragY(deltaY);
+    } else {
+      setDragY(0);
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // safe fallback
+    }
+
+    const deltaY = e.clientY - startYRef.current;
+    // Swipe down threshold: if dragged down by > 80px, close drawer; else snap back
+    if (deltaY > 80) {
+      setOpen(false);
+      setDragY(0);
+    } else {
+      setDragY(0);
+    }
+  };
 
   return (
     <div className="mb-4 lg:hidden">
@@ -179,27 +239,55 @@ export function ProductCategoryMobileDrawer({ categories, selectedName, onSelect
 
       {open ? (
         <>
+          {/* Outside click backdrop */}
           <button
             type="button"
             aria-label="Close category filter"
-            className="fixed inset-0 z-[60] bg-black/40"
+            className="fixed inset-0 z-[1050] bg-black/50 backdrop-blur-[2px] transition-opacity cursor-pointer"
             onClick={() => setOpen(false)}
           />
           <div
-            className="fixed inset-x-0 bottom-0 z-[70] max-h-[88vh] rounded-t-2xl bg-[#F3F6FA] shadow-[0_-8px_32px_rgba(14,58,86,0.12)]"
+            className="fixed inset-x-0 bottom-0 z-[1060] flex max-h-[85vh] flex-col rounded-t-2xl bg-[#F3F6FA] shadow-[0_-8px_32px_rgba(14,58,86,0.18)] overscroll-contain"
             role="dialog"
             aria-modal="true"
             aria-label="Filter by category"
+            style={{
+              transform: `translateY(${dragY}px)`,
+              transition: isDragging ? "none" : "transform 0.22s cubic-bezier(0.25, 1, 0.5, 1)",
+            }}
           >
-            <div className="flex justify-center pb-1 pt-3">
-              <span className="h-1 w-10 rounded-full bg-[#DCE6ED]" aria-hidden />
+            {/* Top drag handle area - swipe/drag down here to close */}
+            <div
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              className="flex w-full shrink-0 flex-col items-center justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none select-none"
+              aria-label="Drag down to close drawer"
+            >
+              <span className="h-1.5 w-12 rounded-full bg-[#CBD5E1]" />
             </div>
-            <div className="max-h-[calc(88vh-2rem)] overflow-hidden px-1 pb-6">
+
+            {/* Header with Title - also draggable */}
+            <div
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              className="flex shrink-0 items-center px-5 pb-2 cursor-grab active:cursor-grabbing touch-none select-none"
+            >
+              <h2 className="text-lg font-semibold text-[#0E3A56]">Product categories</h2>
+            </div>
+
+            {/* Content area: flex-1 min-h-0 so child flex can scroll properly */}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-6">
               <ProductCategoryPanel
                 categories={categories}
                 selectedName={selectedName}
                 onSelect={handleSelect}
-                className="max-h-none bg-transparent shadow-none"
+                hideTitle={true}
+                defaultExpanded={true}
+                className="h-full max-h-none flex-1 min-h-0 bg-transparent p-0 shadow-none"
               />
             </div>
           </div>
