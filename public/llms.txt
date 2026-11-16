@@ -1,0 +1,32 @@
+# Anmol Graphics
+
+> Leading manufacturer and wholesale supplier of School ID Cards, Corporate ID Cards, RFID Smart Cards, Multi-color Custom Lanyards, Badges, and Identification Accessories based in India.
+
+Anmol Graphics specializes in high-quality identification solutions for schools, colleges, universities, corporate offices, government institutions, events, and exhibitions. We manufacture durable PVC cards, RFID contactless smart cards, digital satin/sublimation printed lanyards, custom badges, card holders, and attachment clips with full custom branding and pan-India delivery.
+
+## Core Products & Services
+
+- [ID Cards & Smart Cards](https://anmolgraphics.in/products): Premium thermal-printed and offset-printed PVC cards including School ID Cards, Corporate ID Cards, Student Identity Cards, and Membership Cards.
+- [RFID & Proximity Cards](https://anmolgraphics.in/products): 125 kHz Proximity Cards and 13.56 MHz Mifare / Contactless Smart Cards for attendance, access control, library, and canteen management systems.
+- [Custom Printed Lanyards](https://anmolgraphics.in/products): Multi-color digital sublimation printed and screen-printed polyester/satin lanyards (12mm, 16mm, 20mm) customized with company or school logos and safety breakaway releases.
+- [Badges & Rosettes](https://anmolgraphics.in/products): Magnetic name badges, pin badges, button badges, metallic badges, and event award rosettes.
+- [Card Holders & Accessories](https://anmolgraphics.in/products): Hard plastic card holders, soft transparent vinyl pouches, retractable badge reels (YoYo), alligator clips, metal swivel hooks, and snap clips.
+
+## Business Details & Ordering
+
+- Minimum Order Quantity (MOQ): Flexible for both small orders and large bulk institutional supplies.
+- Customization: Full custom design support, variable data printing (photos, barcodes, QR codes, names, serial numbers).
+- Turnaround: Fast production with reliable delivery across India.
+- Inquiries & Quotes: https://anmolgraphics.in/contact
+
+## Website & Navigation Links
+
+- Homepage: https://anmolgraphics.in
+- Product Catalog: https://anmolgraphics.in/products
+- About Company: https://anmolgraphics.in/about
+- Contact & Inquiries: https://anmolgraphics.in/contact
+- Frequently Asked Questions: https://anmolgraphics.in/faq
+
+## Additional Technical Documentation
+
+- [Full Catalog & Specifications](https://anmolgraphics.in/llms-full.txt): Detailed materials, dimensions, RFID specs, lanyard printing options, and FAQs for LLM crawlers.

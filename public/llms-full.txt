@@ -1,0 +1,61 @@
+# Anmol Graphics - Full Technical Specifications & Catalog
+
+Anmol Graphics is a premier Indian manufacturer and supplier of identity management products, smart cards, customized neck lanyards, and accessories.
+
+## 1. Product Categories & Technical Specifications
+
+### A. PVC Identity Cards & Smart Cards
+- Material: High-grade PVC / Polycarbonate composite.
+- Card Dimensions: Standard CR80 format (85.6mm x 54mm x 0.76mm / 30 mil thickness).
+- Printing Techniques: High-definition digital thermal re-transfer, UV flatbed printing, and industrial offset printing with protective gloss or matte lamination overlay.
+- Security Features: Hologram hot-stamping, UV invisible ink, guilloche background patterns, micro-text, QR codes, sequential numbering, and barcode encoding (Code 128, Code 39, QR).
+- Card Types:
+  - School & College Student ID Cards (Single / Both side print)
+  - Corporate & Employee Identity Cards
+  - Visitor & Contractor Passes
+  - Membership & Loyalty Cards
+  - RFID Smart Cards (13.56 MHz Mifare 1K/4K, NTAG)
+  - Proximity EM Cards (125 kHz EM4100 / TK4100)
+
+### B. Custom Lanyards (Neck Ribbons)
+- Materials: Fine polyester, satin ribbon, woven nylon.
+- Standard Widths: 12mm, 16mm, 20mm, 25mm.
+- Printing Options:
+  - Multi-Color Sublimation (Heat Transfer): Vivid full-color gradients, photographs, and precise logo reproduction.
+  - Screen Printing: Sharp solid-color printing on dyed polyester ribbons.
+  - Jacquard / Woven: Logo and text woven directly into fabric for long lifespan.
+- Attachments & Fittings:
+  - Metal dog-hook (swivel hook)
+  - Fish hook / Trigger clip
+  - Alligator clip
+  - Plastic quick-release buckle
+  - Safety breakaway neck clip (for schools and hazardous factory environments)
+
+### C. ID Card Holders & Pouches
+- Hard Plastic Holders: Single-sided and dual-sided rigid ABS card cases in portrait and landscape orientations.
+- Soft Vinyl Pouches: Clear waterproof PVC pouches for conferences, exhibitions, and visitor badges.
+- Colored Frames: Available in blue, black, white, red, green, and custom pantone shades.
+
+### D. Badges & Attachments
+- Magnetic Name Badges: Dual-magnet backing prevents puncture damage to fine shirts and suits.
+- Pin-back Badges: Durable stainless steel pin backings.
+- Event Rosettes: Satin ribbon rosettes for awards, celebrations, and sports events.
+- Retractable YoYo Badge Reels: Heavy-duty cord mechanism for quick card swiping at security turnstiles.
+
+## 2. Frequently Asked Questions (FAQ)
+
+Q: What is the turnaround time for bulk orders?
+A: Standard production takes 3 to 7 working days depending on quantity, customization requirements, and print approvals.
+
+Q: Can we print individual student or employee photos and data?
+A: Yes, we provide full Variable Data Printing (VDP) from Excel sheets, including portraits, names, blood groups, addresses, and emergency contacts.
+
+Q: Do you ship across India?
+A: Yes, we provide reliable courier and logistics delivery to all states and union territories in India.
+
+## 3. Contact & Business Information
+
+- Company Name: Anmol Graphics
+- Website: https://anmolgraphics.in
+- Inquiries & Support: https://anmolgraphics.in/contact
+- WhatsApp / Phone & Email support available via the website contact page.

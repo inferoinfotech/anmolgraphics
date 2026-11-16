@@ -1,9 +1,33 @@
 # *
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# AI & LLM Crawlers
+User-agent: GPTBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin/
+Disallow: /api/
 
 # Host
 Host: https://anmolgraphics.in
 
-# Sitemaps
+# Sitemaps & LLM Context
 Sitemap: https://anmolgraphics.in/sitemap.xml
+# LLMs context: https://anmolgraphics.in/llms.txt

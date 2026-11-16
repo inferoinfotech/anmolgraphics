@@ -18,9 +18,71 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Anmol Graphics",
-  description: "Manufacturers of School ID Cards, Company ID Cards, and RFID Cards.",
-  icons: "/assets/images/icon.png"
+  metadataBase: new URL("https://anmolgraphics.in"),
+  title: {
+    default: "Anmol Graphics | ID Card, Lanyard & Badge Manufacturers",
+    template: "%s | Anmol Graphics",
+  },
+  description: "Leading manufacturer and supplier of School ID Cards, Corporate ID Cards, RFID Smart Cards, Custom Lanyards, Badges, and Identification Accessories.",
+  keywords: [
+    "School ID Cards",
+    "Company ID Cards",
+    "Corporate ID Cards",
+    "RFID Cards",
+    "Smart Cards",
+    "Custom Lanyards",
+    "ID Card Manufacturer",
+    "Card Holders",
+    "Badges",
+    "Anmol Graphics",
+  ],
+  authors: [{ name: "Anmol Graphics", url: "https://anmolgraphics.in" }],
+  creator: "Anmol Graphics",
+  publisher: "Anmol Graphics",
+  icons: {
+    icon: "/assets/images/icon.png",
+    shortcut: "/assets/images/icon.png",
+    apple: "/assets/images/icon.png",
+  },
+  alternates: {
+    canonical: "https://anmolgraphics.in",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    title: "Anmol Graphics | ID Card, Lanyard & Badge Manufacturers",
+    description: "Leading manufacturer and supplier of School ID Cards, Corporate ID Cards, RFID Smart Cards, Custom Lanyards, Badges, and Identification Accessories.",
+    url: "https://anmolgraphics.in",
+    siteName: "Anmol Graphics",
+    locale: "en_IN",
+    type: "website",
+    images: [
+      {
+        url: "/assets/images/icon.png",
+        width: 512,
+        height: 512,
+        alt: "Anmol Graphics Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Anmol Graphics | ID Card, Lanyard & Badge Manufacturers",
+    description: "Leading manufacturer and supplier of School ID Cards, Corporate ID Cards, RFID Smart Cards, Custom Lanyards, and Badges.",
+    images: ["/assets/images/icon.png"],
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+  },
 };
 
 export default function RootLayout({ children }) {
